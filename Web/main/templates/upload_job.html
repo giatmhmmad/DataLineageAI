@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Job - Data Lineage{% endblock %}
+{% block page_title %}Upload Job{% endblock %}
+{% block page_description %}Register a new Talend job via FTP path{% endblock %}
+{% block content %}
+<div class="row justify-content-center upload-job-page">
+    <div class="col-12 col-lg-10 col-xl-9">
+        <div class="card border-0 shadow-sm rounded-3">
+            
+            <div class="card-header border-bottom p-4">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i> Upload Job via FTP
+                </h5>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <div>
+                            <h5><i class="fas fa-info-circle"></i> How it works</h5>
+                            <p class="mb-0 text-muted small">
+                                Fill in the job details and provide the <strong>absolute path</strong> to the <code>.zip</code> file located on the FTP server.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" id="ftpJobForm" action="{% url 'upload_job' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="job_name" class="form-label mb-1">Job Name</label>
+                        <input type="text" class="form-control" id="job_name" name="job_name" placeholder="e.g. CDP_DMT_WHL_DPKNEW_DLY_H1" value="{{ form_data.job_name|default:'' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="job_path" class="form-label mb-1">FTP File Path</label>
+                        <input type="text" class="form-control" id="job_path" name="job_path" placeholder="/srv/ftp/talend_jobs/project_sales_v1.zip" value="{{ form_data.job_path|default:'' }}" required autocomplete="off">
+                        <div class="form-text text-muted">
+                            <i class="fas fa-exclamation-triangle text-warning me-1"></i> Ensure the file exists and has read permissions.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="target_table" class="form-label mb-1">Target Table</label>
+                        <select name="target_table" id="target_table" class="form-select" multiple></select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i> 
+                            Ketik untuk mencari table atau tekan <strong>Enter</strong> untuk menambah table baru.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="developer" class="form-label fw-semibold mb-1">
+                            Developer (PIC)
+                        </label>
+
+                        <select name="developer"
+                                id="developer"
+                                class="form-select choices-multiple"
+                                multiple
+                                style="width: 100%;">
+                            <option value=""></option>
+
+                            {% for dev in developers %}
+                                <option value="{{ dev.developer_id }}">
+                                    {{ dev.developer_name }} ({{ dev.department }})
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="form-text mt-1">
+                            Tidak ada di list?
+                            <a href="{% url 'create_developer' %}" class="link-primary fw-semibold">
+                                Tambah developer baru
+                            </a>
+                        </div>
+                    </div>
+
+
+
+
+                    <hr class="my-4 text-muted opacity-25">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'job_list' %}" class="btn btn-light border px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4" id="submitBtn">
+                            Process Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+    </div>
+</div>
+
+<div id="statusMessage" class="mt-3" style="display: none;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<style>
+    /* Styling agar Choices.js lebih menyatu dengan Bootstrap 5 */
+    .choices__inner {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        min-height: 38px;
+        padding: 4px 10px;
+    }
+    .choices[data-type*="select-multiple"] .choices__button, 
+    .choices[data-type*="text"] .choices__button {
+        border-left: 1px solid rgba(255,255,255,0.3);
+    }
+    .choices__list--multiple .choices__item {
+        background-color: #0d6efd; /* Warna Primary Bootstrap */
+        border: 1px solid #0d6efd;
+    }
+    .is-focused .choices__inner {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Menghilangkan pesan 'No choices to choose from' saat user ingin input manual */
+    .choices__list--dropdown .choices__item--selectable.choices__placeholder {
+        display: none;
+    }
+    /* Memastikan tag table baru berwarna berbeda (opsional) */
+    .choices__list--multiple .choices__item {
+        background-color: #198754; /* Warna hijau success untuk membedakan */
+        border: 1px solid #198754;
+    }
+
+    .choices {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .choices__inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Input field */
+    .choices__input {
+        width: 100% !important;
+    }
+
+    /* Dropdown agar sejajar */
+    .choices__list--dropdown {
+        width: 100%;
+    }
+
+    .card-body {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    }
+
+    .choices__list--multiple .choices__item {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    }
+
+    .card,
+    .card-body,
+    .form-select,
+    .form-control,
+    .col-12,
+    .col-lg-10,
+    .col-xl-9 {
+        overflow: visible !important;
+    }
+
+    *, *::before, *::after {
+    box-sizing: border-box;
+    }
+
+    /* FIX Choices overflow di Bootstrap row */
+    .row .choices {
+        width: 100% !important;
+        max-width: calc(100% - 1px) !important;
+    }
+
+    .row .choices__inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .row {
+    margin-left: 0;
+    margin-right: 0;
+    }
+
+    .upload-job-page .alert {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+</style>
+
+<script>
+$(document).ready(function () {
+
+    /* ===============================
+       Init Choices.js (Pengganti Select2)
+    =============================== */
+    const element = document.getElementById('developer');
+    const developerChoices = new Choices(element, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: '-- Select Developers --',
+        searchPlaceholderValue: 'Cari nama developer...',
+        noResultsText: 'Developer tidak ditemukan',
+        itemSelectText: 'Klik untuk memilih',
+    });
+
+    /* ===============================
+    Init Choices.js untuk Target Table
+    =============================== */
+    const targetTableElement = document.getElementById('target_table');
+
+    const targetTableChoices = new Choices('#target_table', {
+        removeItemButton: true,
+        searchEnabled: true,
+        searchChoices: false,
+        addItems: true,
+        duplicateItemsAllowed: false,
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: '-- Cari atau Input Table --',
+    });
+
+
+    // Event Listener saat user mengetik untuk mencari table (Server-side search)
+    targetTableElement.addEventListener('search', function (event) {
+        const searchTerm = event.detail.value;
+
+        if (searchTerm.length < 2) return;
+
+        fetch(`/api/get-tables/?q=${searchTerm}`)
+            .then(res => res.json())
+            .then(data => {
+                const choicesList = data.results.map(t => ({
+                    value: t,
+                    label: t
+                }));
+
+                targetTableChoices.clearChoices();
+                targetTableChoices.setChoices(choicesList, 'value', 'label', false);
+            })
+            .catch(err => console.error(err));
+    });
+
+    const inputEl = targetTableChoices.input.element;
+
+    inputEl.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+
+        e.preventDefault();
+
+        const value = inputEl.value.trim();
+        if (!value) return;
+
+        // Cegah duplikat
+        const existing = targetTableChoices.getValue(true);
+        if (existing.includes(value)) return;
+
+        // 🔥 INI KUNCINYA (API RESMI)
+        targetTableChoices.setValue([
+            ...existing,
+            value
+        ]);
+
+        inputEl.value = '';
+    });
+
+
+    /* ===============================
+       Handle Process Job Button
+    =============================== */
+    const form = document.getElementById('ftpJobForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function () {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Processing...
+        `;
+        
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(el => el.setAttribute('readonly', true));
+    });
+
+
+
+});
+</script>
+{% endblock %}

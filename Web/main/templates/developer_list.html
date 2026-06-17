@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Developer List - Data Lineage{% endblock %}
+{% block page_title %}Developer List{% endblock %}
+{% block page_description %}Manage and view all your database developers{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Developer List</h3>
+        <p class="card-subtitle">Overview of all developers in your database</p>
+    </div>
+
+    <div class="card-body">
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            
+            <div>
+                <a href="{% url 'create_developer' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Developer
+                </a>
+            </div>
+
+            <div class="flex-grow-1 mx-3" style="max-width: 400px;">
+                <form method="GET" action="">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="Search developer name..." 
+                               value="{{ search_query|default:'' }}">
+                        
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        
+                        {% if search_query %}
+                            <a href="." class="btn btn-outline-danger" title="Clear Search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <div>
+                <span class="badge badge-info">{{ developers.count }} Developers</span>
+            </div>
+            
+        </div>
+
+
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Developer Name</th>
+                        <th>Department</th>
+                        <th>Team</th>
+                        <th>Actions</th>
+                    </tr>
+                       
+                </thead>
+                <tbody>
+                    {% for developer in developers %}
+                    <tr>
+                        <td>{{ developer.developer_name }}</td>
+                        <td>{{ developer.department }}</td>
+                        <td>{{ developer.team }}</td>
+                        <td>    
+                            <a href="{% url 'view_developer' developer.developer_id %}" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{% url 'edit_developer' developer.developer_id %}" class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            {% if search_query %}
+                                No developers found matching "{{ search_query }}". 
+                                <a href="." class="text-decoration-none">Clear search</a>
+                            {% else %}
+                                No developers found. Add developers first.
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+

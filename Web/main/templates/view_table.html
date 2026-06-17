@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+
+{% block title %}View Table - Data Lineage{% endblock %}
+
+{% block page_title %}View Table{% endblock %}
+{% block page_description %}Table details{% endblock %}
+
+{% block content %}
+<div class="view-table-container">
+    <div class="mb-3">
+        <a href="{% url 'table_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Table List
+        </a>
+    </div>
+
+    <div class="table-view-card">
+        <div class="table-view-header">
+            <div class="table-view-title">
+                <i class="fas fa-table"></i>
+                <h2>{{ table.table_name }}</h2>
+            </div>
+        </div>
+        
+        <div class="table-view-body">
+            <div class="table-details-simple">
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-hashtag"></i>
+                        Table ID
+                    </div>
+                    <div class="detail-value">{{ table.table_id }}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-tag"></i>
+                        Table Name
+                    </div>
+                    <div class="detail-value">{{ table.table_name }}</div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-layer-group"></i>
+                        Category
+                    </div>
+                    <div class="detail-value font-weight-bold">
+                        {% if table.table_category and table.table_category == 'DATAMART'%}
+                            <span class="badge bg-primary">
+                                {{ table.get_table_category_display }}
+                            </span>
+                        {% elif table.table_category and table.table_category == 'STAGING'%}
+                            <span class="badge bg-warning text-dark">
+                                {{ table.get_table_category_display }}
+                            </span>
+                        {% elif table.table_category and table.table_category == 'SOURCE DATA'%}
+                            <span class="badge bg-success">
+                                {{ table.get_table_category_display }}
+                            </span>
+                        {% elif table.table_category and table.table_category == 'OTHER'%}
+                            <span class="badge bg-dark">
+                                {{ table.get_table_category_display }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-align-left"></i>
+                        Description
+                    </div>
+                    <div class="detail-value text-muted">
+                        {{ table.table_desc|default:"-"|linebreaksbr }}
+                    </div>
+                </div> -->
+                
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-project-diagram"></i>
+                        Total Relationships
+                    </div>
+                    <div class="detail-value">{{ total_relationships }}</div>
+                </div>
+            </div>
+
+            <div class ="description-section mt-4 pt-3 border-top">
+                <h4 class="mb-3">
+                    <i class="fas fa-info-circle"></i> Table Description
+                </h4>
+                <div class="table-description-content">
+                    {% if table.table_desc %}
+                        <p>{{ table.table_desc|linebreaksbr }}</p>
+                    {% else %}
+                        <p class="text-muted">No description available for this table.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if incoming_relationships or outgoing_relationships %}
+            <div class="relationships-section mt-4">
+                <h4 class="mb-3">
+                    <i class="fas fa-sitemap"></i> Table Relationships
+                </h4>
+                
+                <div class="accordion" id="relationshipsAccordion">
+                    
+                    {% if incoming_relationships %}
+                    <div class="accordion-item mb-3 border overflow-hidden rounded">
+                        <h2 class="accordion-header" id="headingIncoming">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIncoming" aria-expanded="true" aria-controls="collapseIncoming">
+                                <div class="d-flex align-items-center w-100">
+                                    <i class="fas fa-arrow-down text-info me-2"></i> 
+                                    <span class="fw-bold">Incoming Data</span>
+                                    <span class="badge badge-info ms-auto me-3">{{ incoming_relationships.count }} sources</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseIncoming" class="accordion-collapse collapse show" aria-labelledby="headingIncoming">
+                            <div class="accordion-body bg-light">
+                                <div class="relationship-list">
+                                    {% for rel in incoming_relationships %}
+                                    <div class="relationship-item">
+                                        <div class="relationship-details">
+                                            <strong class="text-dark">{{ rel.table1.table_name|default:"Unknown Table" }}</strong>
+                                            <span class="text-muted mx-2">→</span>
+                                            <span class="text-info">{{ table.table_name }}</span>
+                                        </div>
+                                        <div class="relationship-job">
+                                            <span class="badge badge-info" title="Job Name">
+                                                {% if rel.job_name %}
+                                                    {{ rel.job_name }}
+                                                {% elif rel.job.job_name %}
+                                                    {{ rel.job.job_name }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if outgoing_relationships %}
+                    <div class="accordion-item border overflow-hidden rounded">
+                        <h2 class="accordion-header" id="headingOutgoing">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutgoing" aria-expanded="false" aria-controls="collapseOutgoing">
+                                <div class="d-flex align-items-center w-100">
+                                    <i class="fas fa-arrow-up text-success me-2"></i>
+                                    <span class="fw-bold">Outgoing Data</span>
+                                    <span class="badge badge-success ms-auto me-3">{{ outgoing_relationships.count }} targets</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseOutgoing" class="accordion-collapse collapse" aria-labelledby="headingOutgoing">
+                            <div class="accordion-body bg-light">
+                                <div class="relationship-list">
+                                    {% for rel in outgoing_relationships %}
+                                    <div class="relationship-item border-start-success">
+                                        <div class="relationship-details">
+                                            <span class="text-success">{{ table.table_name }}</span>
+                                            <span class="text-muted mx-2">→</span>
+                                            <strong class="text-dark">{{ rel.table2.table_name|default:"Unknown Table" }}</strong>
+                                        </div>
+                                        <div class="relationship-job">
+                                            <span class="badge badge-success" title="Job Name">
+                                                {% if rel.job_name %}
+                                                    {{ rel.job_name }}
+                                                {% elif rel.job.job_name %}
+                                                    {{ rel.job.job_name }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% else %}
+            <div class="no-relationships mt-4">
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>This table has no relationships defined.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="columns-section mt-4 pt-3 border-top">
+                <h4 class="mb-3">
+                    <i class="fas fa-columns"></i> Table Columns
+                </h4>    
+                {% if columns.exists %}
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Column Name</th>
+                                <th>Data Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col in columns %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td class="table-name-cell font-weight-bold">
+                                    {{ col.column_name }}</td>
+                                <td class="data-type-cell font-weight-bold ">
+                                    {{ col.data_type }}</td>
+                                <td class="column-desc-cell font-normal">
+                                    {{ col.column_desc|default:"-" }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="fas fa-folder-open mb-2"></i><br>
+                                    No columns details found for this table.
+                                </td>
+                            </tr>
+                            {% endfor %}           
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="no-columns mt-4">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>This table has no columns defined.</p>
+                    </div>
+                </div>
+                
+                {% endif %}
+            </div>
+
+
+            
+            <div class="view-actions">
+                <a href="{% url 'edit_table' table.table_id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Table
+                </a>
+                <a href="{% url 'table_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Back to List
+                </a>
+                <button class="btn btn-outline-danger" onclick="confirmDelete('{{ table.table_id }}')">
+                    <i class="fas fa-trash"></i> Delete Table
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(tableId) {
+    if (confirm('Are you sure you want to delete this table? This action cannot be undone.')) {
+        // Create form and submit for deletion
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/tables/delete/${tableId}/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        } else {
+            // Get CSRF token from cookie if available
+            const csrfCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('csrftoken='));
+            if (csrfCookie) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfCookie.split('=')[1];
+                form.appendChild(csrfInput);
+            }
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %} 
+
+
+{% block extra_css %}
+<style>
+/* --- Layout Utama --- */
+.relationships-section {
+    border-top: 1px solid #e9ecef;
+    padding-top: 1.5rem;
+}
+
+/* --- Accordion Styling --- */
+.accordion-button:not(.collapsed) {
+    color: #495057;
+    background-color: #f8f9fa;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0,0,0,.125);
+}
+
+.accordion-item {
+    border: 1px solid rgba(0,0,0,.125);
+    border-radius: 0.25rem;
+}
+
+/* --- Relationship List Styling (YANG DIPERBAIKI) --- */
+.relationship-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Jarak vertikal antar baris */
+}
+
+.relationship-item {
+    display: flex;
+    flex-wrap: nowrap; /* Jangan turun baris kecuali layar hp sangat kecil */
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 1rem 1.25rem; /* Padding diperbesar agar lega */
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    border-left: 5px solid #17a2b8; /* Border kiri lebih tebal */
+    transition: all 0.2s ease-in-out;
+    gap: 1rem; /* Jarak antara teks tabel dan badge job */
+}
+
+.relationship-item:hover {
+    transform: translateY(-2px); /* Efek naik sedikit saat hover */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+/* Khusus Outgoing border hijau */
+.relationship-item.border-start-success {
+    border-left-color: #28a745 !important;
+}
+
+/* --- Area Kiri: Nama Tabel --- */
+.relationship-details {
+    flex-grow: 1; /* Mengambil sisa ruang yang ada */
+    min-width: 0; /* PENTING: Mencegah flex item overflow */
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-wrap: break-word; /* Bungkus teks jika nama tabel sangat panjang */
+}
+
+.relationship-details strong {
+    font-weight: 600;
+}
+
+.relationship-details .fas {
+    font-size: 0.8rem; /* Icon panah sedikit diperkecil */
+    margin-top: 2px;
+}
+
+/* --- Area Kanan: Badge Job --- */
+.relationship-job {
+    flex-shrink: 0; /* Jangan biarkan area ini mengecil sampai hilang */
+    max-width: 30%; /* Batasi lebar maksimal badge (30% dari container) */
+    text-align: right;
+}
+
+/* --- Styling Badge (Agar Rapi & Tidak Tumpah) --- */
+.badge {
+    display: inline-block;
+    padding: 0.5em 0.8em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 4px; /* Sudut sedikit membulat */
+    
+    /* Logic Pemotongan Teks */
+    max-width: 100%; 
+    overflow: hidden;
+    text-overflow: ellipsis; /* Menambah '...' jika kepanjangan */
+}
+
+.badge-info {
+    color: #fff;
+    background-color: #17a2b8;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+/* --- Helpers --- */
+.text-info { color: #17a2b8 !important; }
+.text-success { color: #28a745 !important; }
+.text-muted { color: #6c757d !important; }
+.bg-light { background-color: #f8f9fa !important; }
+.fw-bold { font-weight: 600 !important; }
+
+/* Empty State */
+.no-relationships {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 3rem 1rem;
+    border: 1px dashed #dee2e6;
+}
+
+/* View Actions Buttons */
+.view-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Mobile Responsive Tweaks */
+@media (max-width: 768px) {
+    .relationship-item {
+        flex-direction: column; /* Tumpuk ke bawah di HP */
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .relationship-job {
+        max-width: 100%;
+        margin-top: 0.25rem;
+    }
+}
+</style>
+{% endblock %}

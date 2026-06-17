@@ -1,0 +1,673 @@
+{% extends 'base.html' %}
+
+{% block title %}View Job - Data Lineage{% endblock %}
+
+{% block page_title %}View Job{% endblock %}
+{% block page_description %}Job details{% endblock %}
+
+{% block content %}
+<div class="view-job-container">
+    
+    <div class="mb-3">
+        <a href="{% url 'job_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Job List
+        </a>
+    </div>
+
+    <div class="table-view-card">
+        <div class="table-view-header">
+            <div class="table-view-title">
+                <i class="fas fa-folder"></i>
+                <h2>{{ job.job_name }}</h2>
+            </div>
+        </div>
+
+        <div class="table-view-body">
+            <div class="table-details-simple">
+                
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-hashtag"></i> Job ID
+                    </div>
+                    <div class="detail-value">{{ job.job_id }}</div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-tag"></i> Job Name
+                    </div>
+                    <div class="detail-value">{{ job.job_name }}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-users"></i> Developer (PIC)
+                    </div>
+                    <div class="detail-value">
+                        {% if job.developers.all %}
+                            <div class="developer-list">
+                                {% for dev in job.developers.all %}
+                                    <span class="developer-badge">
+                                        <i class="fas fa-user-circle"></i>
+                                        {{ dev.developer_name }}
+                                        <small class="text-muted">({{ dev.department }})</small>
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">No developer assigned.</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-bullseye"></i> Target Tables (Output)
+                    </div>
+                    <div class="detail-value">
+                        {% if target_tables %}
+                            <div class="target-list">
+                                {% for table in target_tables %}
+                                    <a href="{% url 'view_table' table.table_id %}" class="target-item">
+                                        <i class="fas fa-table icon"></i> 
+                                        <span class="text">{{ table.table_name }}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted small">No target tables linked.</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-arrow-right-to-bracket"></i> Source Tables Count
+                    </div>
+                    <div class="detail-value">{{ source_tables|length }}</div>
+                </div>
+
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-calendar"></i> Upload Date
+                    </div>
+                    <div class="detail-value">{{ job.created_at }}</div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">
+                        <i class="fas fa-calendar"></i> Update Date
+                    </div>
+                    <div class="detail-value">{{ job.updated_at }}</div>
+                </div>
+            </div> 
+            
+            <hr class="my-4" style="border-top: 1px solid #dee2e6;">
+
+            <div class="source-tables-section mt-4">
+                <h4 class="mb-3">
+                    <i class="fas fa-arrow-right-to-bracket me-2"></i> Source Tables (Input)
+                </h4>
+                
+                <!-- Filter Category Section -->
+                <div class="filter-section mb-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div class="category-filter">
+                            <label class="filter-label mb-2">
+                                <i class="fas fa-filter me-1"></i> Filter by Category:
+                            </label>
+                            <div class="btn-group flex-wrap" role="group" aria-label="Category filter">
+                                <input type="checkbox" class="btn-check" id="filterAll" autocomplete="off" checked>
+                                <label class="btn btn-outline-secondary" for="filterAll">
+                                    <i class="fas fa-check-double me-1"></i> All
+                                    <span class="badge bg-secondary ms-1" id="countAll">0</span>
+                                </label>
+
+                                <input type="checkbox" class="btn-check" id="filterDatamart" autocomplete="off" data-category="DATAMART">
+                                <label class="btn btn-outline-primary" for="filterDatamart">
+                                    <i class="fas fa-database me-1"></i> Datamart
+                                    <span class="badge bg-primary ms-1" id="countDatamart">0</span>
+                                </label>
+
+                                <input type="checkbox" class="btn-check" id="filterStaging" autocomplete="off" data-category="STAGING">
+                                <label class="btn btn-outline-warning" for="filterStaging">
+                                    <i class="fas fa-layer-group me-1"></i> Staging
+                                    <span class="badge bg-warning text-dark ms-1" id="countStaging">0</span>
+                                </label>
+
+                                <input type="checkbox" class="btn-check" id="filterSource" autocomplete="off" data-category="SOURCE DATA">
+                                <label class="btn btn-outline-success" for="filterSource">
+                                    <i class="fas fa-table me-1"></i> Source Data
+                                    <span class="badge bg-success ms-1" id="countSource">0</span>
+                                </label>
+
+                                <input type="checkbox" class="btn-check" id="filterOther" autocomplete="off" data-category="OTHER">
+                                <label class="btn btn-outline-dark" for="filterOther">
+                                    <i class="fas fa-ellipsis-h me-1"></i> Other
+                                    <span class="badge bg-dark ms-1" id="countOther">0</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <a href="{% url 'download_jobs_details' job.job_id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-download me-1"></i> Download Details
+                        </a>
+                    </div>
+                    
+                    <!-- Summary Info -->
+                    <div class="filter-summary mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Showing <strong id="visibleCount">0</strong> of <strong id="totalCount">0</strong> tables
+                        </small>
+                    </div>
+                </div>
+
+                {% if source_tables %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle" id="sourceTablesTable">
+                            <thead>
+                                <tr>
+                                    <th>Table Name</th>
+                                    <th>Category</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for table in source_tables %}
+                                <tr data-category="{{ table.table_category|default:'' }}">
+                                    
+                                    <td class="table-name-cell font-weight-bold">
+                                        {{ table.table_name }}</td>
+                                    
+                                    <td>
+                                        {% if table.table_category and table.table_category == 'DATAMART'%}
+                                            <span class="badge bg-primary">{{ table.get_table_category_display }}</span>
+                                        {% elif table.table_category and table.table_category == 'STAGING'%}
+                                            <span class="badge bg-warning text-dark">{{ table.get_table_category_display }}</span>
+                                        {% elif table.table_category and table.table_category == 'SOURCE DATA'%}
+                                            <span class="badge bg-success">{{ table.get_table_category_display }}</span>
+                                        {% elif table.table_category and table.table_category == 'OTHER'%}
+                                            <span class="badge bg-dark">{{ table.get_table_category_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="table-actions-cell">
+                                        <a href="{% url 'view_table' table.table_id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- No Results Message -->
+                    <div id="noResultsMessage" class="alert alert-light text-center border" role="alert" style="display: none;">
+                        <i class="fas fa-search me-2"></i> No tables found matching the selected filters.
+                    </div>
+                {% else %}
+                    <div class="alert alert-light text-center border" role="alert">
+                        <i class="fas fa-info-circle me-2"></i> No source tables found for this job.
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="view-actions">
+                <a href="{% url 'edit_job' job.job_id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Job
+                </a>
+                <a href="{% url 'job_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Back to List
+                </a>
+                <button class="btn btn-outline-danger" onclick="confirmDelete('{{job.job_id}}')">
+                    <i class="fas fa-trash"></i> Delete Job
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(jobId) {
+    if (confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/jobs/delete/${jobId}/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        } else {
+            const csrfCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('csrftoken='));
+            if (csrfCookie) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfCookie.split('=')[1];
+                form.appendChild(csrfInput);
+            }
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Category Filter Functionality with Counter
+document.addEventListener('DOMContentLoaded', function() {
+    const filterAll = document.getElementById('filterAll');
+    const categoryFilters = document.querySelectorAll('.btn-check[data-category]');
+    const tableRows = document.querySelectorAll('#sourceTablesTable tbody tr');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const tableContainer = document.querySelector('.table-responsive');
+    
+    // Counter elements
+    const countAll = document.getElementById('countAll');
+    const countDatamart = document.getElementById('countDatamart');
+    const countStaging = document.getElementById('countStaging');
+    const countSource = document.getElementById('countSource');
+    const countOther = document.getElementById('countOther');
+    const visibleCount = document.getElementById('visibleCount');
+    const totalCount = document.getElementById('totalCount');
+
+    // Calculate initial counts
+    function calculateCounts() {
+        const counts = {
+            'DATAMART': 0,
+            'STAGING': 0,
+            'SOURCE DATA': 0,
+            'OTHER': 0,
+            'total': 0
+        };
+
+        tableRows.forEach(row => {
+            const category = row.dataset.category;
+            counts['total']++;
+            if (counts[category] !== undefined) {
+                counts[category]++;
+            }
+        });
+
+        return counts;
+    }
+
+    // Update counter badges
+    function updateCounters() {
+        const counts = calculateCounts();
+        
+        countAll.textContent = counts['total'];
+        countDatamart.textContent = counts['DATAMART'];
+        countStaging.textContent = counts['STAGING'];
+        countSource.textContent = counts['SOURCE DATA'];
+        countOther.textContent = counts['OTHER'];
+        totalCount.textContent = counts['total'];
+    }
+
+    // Apply filters and update visible count
+    function applyFilters() {
+        const selectedCategories = [];
+        
+        // Get all checked category filters
+        categoryFilters.forEach(filter => {
+            if (filter.checked) {
+                selectedCategories.push(filter.dataset.category);
+            }
+        });
+
+        let visibleCountValue = 0;
+
+        // Show/hide rows based on selected categories
+        tableRows.forEach(row => {
+            const rowCategory = row.dataset.category;
+            
+            if (filterAll.checked || selectedCategories.length === 0) {
+                row.style.display = '';
+                visibleCountValue++;
+            } else if (selectedCategories.includes(rowCategory)) {
+                row.style.display = '';
+                visibleCountValue++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update visible count
+        visibleCount.textContent = visibleCountValue;
+
+        // Show/hide no results message
+        if (visibleCountValue === 0) {
+            if (tableContainer) tableContainer.style.display = 'none';
+            if (noResultsMessage) noResultsMessage.style.display = 'block';
+        } else {
+            if (tableContainer) tableContainer.style.display = 'block';
+            if (noResultsMessage) noResultsMessage.style.display = 'none';
+        }
+    }
+
+    // Initialize counters
+    updateCounters();
+    applyFilters();
+
+    // Handle "All" filter
+    filterAll.addEventListener('change', function() {
+        if (this.checked) {
+            categoryFilters.forEach(filter => {
+                filter.checked = false;
+            });
+        }
+        applyFilters();
+    });
+
+    // Handle category filters
+    categoryFilters.forEach(filter => {
+        filter.addEventListener('change', function() {
+            if (this.checked) {
+                filterAll.checked = false;
+            }
+            
+            // If no category is selected, check "All"
+            const anyChecked = Array.from(categoryFilters).some(f => f.checked);
+            if (!anyChecked) {
+                filterAll.checked = true;
+            }
+            
+            applyFilters();
+        });
+    });
+});
+</script>
+
+{% block extra_css %}
+<style>
+    /* Wrapper untuk daftar tabel */
+    .target-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* Style untuk setiap item tombol tabel */
+    .target-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        width: 100%;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-left: 5px solid #0d47a1; /* Aksen biru di kiri */
+        border-radius: 6px;
+        color: #333;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    /* Efek Hover */
+    .target-item:hover {
+        background-color: #e3f2fd;
+        border-color: #bbdefb;
+        transform: translateX(5px); /* Geser kanan sedikit */
+        color: #002171;
+        text-decoration: none;
+    }
+
+    /* Style Icon */
+    .target-item .icon {
+        margin-right: 12px;
+        color: #0d47a1;
+        font-size: 1.1em;
+    }
+
+    /* Style Teks Nama Tabel */
+    .target-item .text {
+        font-weight: 700; /* Bold */
+        font-size: 0.95rem;
+    }
+
+    .developer-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-start;
+        max-width: 100%;
+    }
+
+    .developer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-left: 3px solid #0d47a1;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .developer-badge:hover {
+        background-color: #e3f2fd;
+        border-left-color: #1565c0;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(13, 71, 161, 0.15);
+    }
+
+    .developer-badge i {
+        color: #0d47a1;
+        font-size: 0.95em;
+        flex-shrink: 0;
+    }
+
+    .developer-badge .dev-name {
+        font-weight: 600;
+        color: #212529;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .developer-badge .dev-dept {
+        font-size: 0.8em;
+        color: #6c757d;
+        padding-left: 6px;
+        margin-left: 6px;
+        border-left: 1px solid #dee2e6;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 0;
+    }
+
+    /* Responsive untuk mobile */
+    @media (max-width: 768px) {
+        .developer-badge {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .developer-badge .dev-dept {
+            font-size: 0.75em;
+        }
+
+        .developer-list {
+            gap: 6px;
+        }
+    }
+
+    /* Jika lebih dari 3 developer, tampilkan dalam grid */
+    .developer-list:has(.developer-badge:nth-child(4)) {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 8px;
+    }
+
+    .custom-table thead th {
+        background-color: #f1f3f5;
+        color: #495057;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        vertical-align: middle;
+    }
+    
+    .custom-table tbody td {
+        vertical-align: middle;
+        color: #333;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Badge Bootstrap override (opsional, jika bootstrap belum load sempurna) */
+    .badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        border-radius: 0.25rem;
+    }
+    .bg-primary { background-color: #0d6efd !important; }
+    .bg-warning { background-color: #ffc107 !important; }
+    .bg-secondary { background-color: #6c757d !important; }
+
+    /* Filter Section Styles */
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.95rem;
+        display: block;
+    }
+
+    .category-filter {
+        width: 100%;
+    }
+
+    .btn-group {
+        gap: 8px;
+    }
+
+    /* Counter Badge Styles */
+    .btn-group label .badge {
+        font-size: 0.7em;
+        padding: 0.25em 0.5em;
+        border-radius: 10px;
+        font-weight: 600;
+        min-width: 22px;
+        display: inline-block;
+        text-align: center;
+    }
+
+    /* Filter Summary */
+    .filter-summary {
+        padding-top: 10px;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .filter-summary strong {
+        color: #0d47a1;
+        font-weight: 700;
+    }
+
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+    }
+
+    .btn-check:checked + .btn-outline-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+
+    .btn-check:checked + .btn-outline-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        border-color: #198754;
+        color: white;
+    }
+
+    .btn-check:checked + .btn-outline-dark {
+        background-color: #212529;
+        border-color: #212529;
+        color: white;
+    }
+
+    /* Badge color when button is checked */
+    .btn-check:checked + .btn-outline-secondary .badge {
+        background-color: #495057 !important;
+        color: white !important;
+    }
+
+    .btn-check:checked + .btn-outline-primary .badge {
+        background-color: #084298 !important;
+        color: white !important;
+    }
+
+    .btn-check:checked + .btn-outline-warning .badge {
+        background-color: #cc9a06 !important;
+        color: #000 !important;
+    }
+
+    .btn-check:checked + .btn-outline-success .badge {
+        background-color: #146c43 !important;
+        color: white !important;
+    }
+
+    .btn-check:checked + .btn-outline-dark .badge {
+        background-color: #000 !important;
+        color: white !important;
+    }
+
+    /* Responsive untuk mobile */
+    @media (max-width: 768px) {
+        .btn-group {
+            width: 100%;
+        }
+
+        .btn-group label {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .filter-summary {
+            text-align: center;
+        }
+    }
+
+    /* Animation for filtered rows */
+    #sourceTablesTable tbody tr {
+        transition: all 0.3s ease;
+    }
+</style>
+
+{% endblock %}
+
+{% endblock %}

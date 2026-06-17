@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Developer - Data Lineage{% endblock %}
+{% block page_title %}Create Developer{% endblock %}
+{% block page_description %}Add a new developer to the database{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Create New Developer</h3>
+        <p class="card-subtitle">Fill in the form below to add a new developer</p>
+    </div>
+
+    <div class="card-body">
+        <form method="post" id="createDeveloperForm">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="developer_name" class="form-label">Developer Name</label>
+                <input type="text" class="form-control" id="developer_name" name="developer_name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Department</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="" selected disabled>Select Department</option>
+                    <option value="DATA MANAGEMENT">DATA MANAGEMENT</option>
+                    <option value="RETAIL BANKING ANALYTICS">RETAIL BANKING ANALYTICS</option>
+                    <option value="WHOLESALE BANKING ANALYTICS">WHOLESALE BANKING ANALYTICS</option>
+                    <option value="DATA GOVERNANCE">DATA GOVERNANCE</option>
+                    <option value="CAMPAIGN MANAGEMENT">CAMPAIGN MANAGEMENT</option>
+                    <option value="OTHER">OTHER</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="team" class="form-label">Team</label>
+                <input type="text" class="form-control" id="team" name="team">
+            </div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Create Developer
+            </button>
+            <a href="{% url 'developer_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancel
+            </a>
+        </form>
+
+
+        <div id="resultsCard" class="card mt-4" style="display:none;">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Result</h5>
+            </div>
+            <div class="card-body">
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+
+
+    </div>  
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const form = document.getElementById('createDeveloperForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+
+        // Loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        hideResult();
+
+        fetch("{% url 'create_developer' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(res => res.json().then(data => ({ status: res.status, data })))
+        .then(result => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+
+            if (result.status === 200 && result.data.success) {
+                showSuccess(result.data.message);
+
+                form.reset();
+
+                // redirect setelah sukses
+                setTimeout(() => {
+                    window.location.href = "{% url 'developer_list' %}";
+                }, 1500);
+
+            } else {
+                showError(result.data.error || 'Failed to create developer');
+            }
+        })
+        .catch(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            showError('Server error. Please try again.');
+        });
+    });
+
+    function showSuccess(message) {
+        showResult(`
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> ${message}
+            </div>
+        `);
+    }
+
+    function showError(message) {
+        showResult(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </div>
+        `);
+    }
+
+    function showResult(html) {
+        document.getElementById('resultsContent').innerHTML = html;
+        document.getElementById('resultsCard').style.display = 'block';
+    }
+
+    function hideResult() {
+        document.getElementById('resultsCard').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
+
+
+

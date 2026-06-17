@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Data Lineage{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_description %}Welcome to your data lineage dashboard{% endblock %}
+
+{% block content %}
+
+
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ job_count }}</div>
+        <div class="stat-label">Jobs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ tables_count }}</div>
+        <div class="stat-label">Total Tables</div>
+    </div>
+    <!-- <div class="stat-card">
+        <div class="stat-number">{{ data_sources_count }}</div>
+        <div class="stat-label">Data Sources</div>
+    </div> -->
+    <div class="stat-card">
+        <div class="stat-number">{{ relationships_count }}</div>
+        <div class="stat-label">Relationships</div>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Welcome to Data Lineage Dashboard</h3>
+        <p class="card-subtitle">Explore your data relationships and manage your database tables with ease.</p>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-table" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
+                    <h4>Table Management</h4>
+                    <p class="text-muted mb-3">View and manage all your database tables in one place</p>
+                    <a href="{% url 'table_list' %}" class="btn btn-primary">View Tables</a>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-project-diagram" style="font-size: 2rem; color: var(--primary-purple); margin-bottom: 1rem;"></i>
+                    <h4>Data Lineage</h4>
+                    <p class="text-muted mb-3">Visualize data flow and relationships between tables</p>
+                    <a href="{% url 'data_lineage' %}" class="btn btn-secondary">View Lineage</a>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-search" style="font-size: 2rem; color: var(--primary-purple); margin-bottom: 1rem;"></i>
+                    <h4>Search & Filter</h4>
+                    <p class="text-muted mb-3">Quickly find the data and relationships you need</p>
+                    <a href="#" class="btn btn-secondary">Coming Soon</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

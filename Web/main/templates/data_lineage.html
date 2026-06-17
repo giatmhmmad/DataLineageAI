@@ -1,0 +1,1056 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Lineage - Data Lineage{% endblock %}
+
+{% block page_title %}Data Lineage{% endblock %}
+{% block page_description %}Visualize data flow and relationships{% endblock %}
+
+{% block extra_css %}
+<style>
+    #lineage-container {
+        background: #fafafa;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        position: relative;
+    }
+    
+    .bubble {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .bubble:hover {
+        stroke-width: 3px;
+        stroke: #ffd700;
+        fill: #1a4fbd;
+    }
+    
+    .bubble-label {
+        pointer-events: none;
+        font-size: 12px;
+        font-weight: normal;
+        text-anchor: middle;
+        dominant-baseline: central;
+        fill: white;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        transition: all 0.3s ease;
+    }
+    
+    .bubble-label.selected {
+        font-weight: bold;
+        fill: #ffd700;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+    }
+    
+    .bubble-label.hover {
+        fill: #ffd700;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+    }
+    
+    .relationship-line {
+        stroke: #333;
+        stroke-width: 2;
+        fill: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .relationship-line:hover {
+        stroke-width: 3;
+        stroke: #000;
+    }
+    
+    .tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .controls {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .table-selector {
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+    
+    .table-selector h6 {
+        margin-bottom: 0.75rem;
+        color: var(--dark-text);
+        font-weight: 600;
+    }
+    
+    .legend {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .legend-bubble {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #888;
+    }
+    
+    .legend-line {
+        width: 30px;
+        height: 2px;
+        background: #333;
+        position: relative;
+    }
+    
+    .legend-line::after {
+        content: '';
+        position: absolute;
+        right: -5px;
+        top: -3px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid #333;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Data Lineage Visualization</h3>
+        <p class="card-subtitle">Interactive bubble chart showing data flow and relationships between tables</p>
+    </div>
+    <div class="card-body">
+        <div class="controls">
+            <button id="resetView" class="btn btn-sm btn-secondary">
+                <i class="fas fa-sync"></i> Reset View
+            </button>
+            <button id="fitToScreen" class="btn btn-sm btn-secondary">
+                <i class="fas fa-expand-arrows-alt"></i> Fit to Screen
+            </button>
+            <a href="{% url 'relationship_list' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-list"></i> View Relationships
+            </a>
+            <a href="{% url 'upload_relationships' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-upload"></i> Upload Data
+            </a>
+            <div style="margin-left: auto;">
+                <span class="badge badge-info">{{ tables.count }} Tables</span>
+                <span class="badge badge-info">{{ relationships.count }} Relationships</span>
+            </div>
+        </div>
+        
+        <div class="table-selector">
+            <h6>Filter by Table Name</h6>
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                <div style="flex: 1; min-width: 250px;">
+                    <input type="text" id="searchableTable" class="form-control" placeholder="Type to search and select a table..." style="max-width: 350px;" list="tableOptions" autocomplete="off">
+                    <datalist id="tableOptions">
+                        <option value="">Show All Tables</option>
+                        {% for table in tables %}
+                        <option value="{{ table.table_name }} (ID: {{ table.table_id }})" data-id="{{ table.table_id }}">{{ table.table_name }} (ID: {{ table.table_id }})</option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <button id="showLineage" class="btn btn-sm btn-primary">
+                    <i class="fas fa-filter"></i> Show Lineage
+                </button>
+                <button id="clearFilter" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-times"></i> Clear Filter
+                </button>
+            </div>
+            <div id="depthLimitContainer" style="display: none; margin-bottom: 1rem;">
+                <label for="depthLimit" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                    Limit Depth Level:
+                </label>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <select id="depthLimit" class="form-control" style="max-width: 200px;">
+                        <option value="">No Limit (Show All Levels)</option>
+                        <option value="0">Level 0 Only (Source)</option>
+                        <option value="1">Up to Level 1</option>
+                        <option value="2">Up to Level 2</option>
+                        <option value="3">Up to Level 3</option>
+                        <option value="4">Up to Level 4</option>
+                        <option value="5">Up to Level 5</option>
+                    </select>
+                    <button id="applyDepthLimit" class="btn btn-sm btn-info">
+                        <i class="fas fa-layer-group"></i> Apply Depth Limit
+                    </button>
+                </div>
+                <small class="text-muted">Limit how many levels deep to show both upstream and downstream from the focus table</small>
+            </div>
+            <small class="text-muted">Select a table to see its complete data lineage - both upstream sources and downstream targets</small>
+        </div>
+        
+        {% if tables.count > 0 %}
+            <div id="lineage-container" style="height: 600px; width: 100%;"></div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-bubble" style="background: #0A2472; border: 2px solid white;"></div>
+                    <span>Tables</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-bubble" style="background: #0A2472; border: 4px solid #ffd700;"></div>
+                    <span>Focus Table (Selected)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line"></div>
+                    <span>Data Flow Direction</span>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-mouse-pointer" style="color: var(--primary-blue);"></i>
+                    <span>Click and drag to span • Scroll to zoom • Hover for details</span>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-project-diagram" style="font-size: 3rem; color: var(--light-text); margin-bottom: 1rem;"></i>
+                <h3>No Data Available</h3>
+                <p>Create some tables and relationships to see the data lineage visualization.</p>
+                <div class="mt-3">
+                    <a href="{% url 'create_table' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Tables
+                    </a>
+                    <a href="{% url 'upload_relationships' %}" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i> Upload Relationships
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+{% if tables.count > 0 %}
+// Data from Django
+const tablesData = {{ tables_json|safe }};
+const relationshipsData = {{ relationships_json|safe }};
+
+// Set up the visualization
+class DataLineageChart {
+    constructor(containerId, tables, relationships) {
+        this.containerId = containerId;
+        this.allTables = tables;
+        this.allRelationships = relationships;
+        this.tables = tables;
+        this.relationships = relationships;
+        this.width = 0;
+        this.height = 0;
+        this.svg = null;
+        this.simulation = null;
+        this.nodes = [];
+        this.links = [];
+        this.selectedSourceId = null;
+        this.depthLimit = null;
+        
+        this.init();
+    }
+    
+    init() {
+        const container = document.getElementById(this.containerId);
+        const rect = container.getBoundingClientRect();
+        this.width = rect.width;
+        this.height = rect.height;
+        
+        // Clear any existing content
+        container.innerHTML = '';
+        
+        // Create SVG
+        this.svg = d3.select(`#${this.containerId}`)
+            .append('svg')
+            .attr('width', this.width)
+            .attr('height', this.height);
+        
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                this.svg.select('.chart-group').attr('transform', event.transform);
+            });
+        
+        this.svg.call(zoom);
+        
+        // Create main group for chart elements
+        this.chartGroup = this.svg.append('g').attr('class', 'chart-group');
+        
+        // Define arrow marker
+        this.svg.append('defs').append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 8)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#333')
+            .attr('stroke', 'none');
+        
+        this.prepareData();
+        this.createSimulation();
+        this.render();
+        this.setupEventHandlers();
+    }
+    
+    prepareData() {
+        if (this.selectedSourceId) {
+            this.prepareFilteredData();
+        } else {
+            this.prepareAllData();
+        }
+    }
+    
+    prepareAllData() {
+        // Prepare nodes (tables) - all tables
+        this.nodes = this.allTables.map(table => ({
+            id: table.id,
+            name: table.name,
+            type: 'table',
+            radius: Math.max(30, Math.min(50, table.name.length * 3 + 20)),
+            isSource: false
+        }));
+        
+        // Prepare links (relationships) - all relationships
+        this.links = this.allRelationships.map(rel => ({
+            source: rel.source,
+            target: rel.target,
+            job_name: rel.job_name
+        }));
+    }
+    
+    prepareFilteredData() {
+        // Find all tables connected to the selected source (both upstream and downstream)
+        const connectedTables = new Set();
+        const connectedRelationships = [];
+        const tableDepths = new Map(); // Track depth/level of each table
+        const relationshipPriorities = new Map(); // Track which relationships to prioritize
+        
+        // First, add the selected source table at depth 0
+        connectedTables.add(this.selectedSourceId);
+        tableDepths.set(this.selectedSourceId, 0);
+        
+        // Analyze bidirectional relationships and set priorities
+        // For each table that has bidirectional relationship with selected table,
+        // prioritize the relationship where selected table is the target (making other table upstream)
+        const bidirectionalTables = new Set();
+        this.allRelationships.forEach(rel => {
+            if (rel.source === this.selectedSourceId || rel.target === this.selectedSourceId) {
+                const otherTableId = rel.source === this.selectedSourceId ? rel.target : rel.source;
+                
+                // Check if there's a reverse relationship
+                const reverseExists = this.allRelationships.some(reverseRel => 
+                    reverseRel.source === otherTableId && reverseRel.target === this.selectedSourceId
+                );
+                
+                if (reverseExists) {
+                    bidirectionalTables.add(otherTableId);
+                    
+                    // Prioritize the relationship where selected table is the target
+                    // This makes the other table upstream (higher priority)
+                    if (rel.target === this.selectedSourceId) {
+                        relationshipPriorities.set(`${rel.source}->${rel.target}`, 'priority');
+                        relationshipPriorities.set(`${this.selectedSourceId}->${otherTableId}`, 'suppress');
+                    }
+                }
+            }
+        });
+        
+        // Find upstream tables first (higher priority)
+        const findUpstreamTables = (targetId, depth = 0, visited = new Set()) => {
+            if (visited.has(targetId)) return;
+            
+            // Apply depth limit if set (only for upstream)
+            if (this.depthLimit !== null && Math.abs(depth) > this.depthLimit) return;
+            
+            visited.add(targetId);
+            
+            // Find all relationships where this table is the target
+            const incomingRelations = this.allRelationships.filter(rel => {
+                const relKey = `${rel.source}->${rel.target}`;
+                return rel.target === targetId && relationshipPriorities.get(relKey) !== 'suppress';
+            });
+            
+            incomingRelations.forEach(rel => {
+                connectedRelationships.push(rel);
+                connectedTables.add(rel.source);
+                
+                // Set negative depth for upstream tables (priority over downstream)
+                const sourceDepth = depth - 1;
+                tableDepths.set(rel.source, sourceDepth);
+                
+                findUpstreamTables(rel.source, sourceDepth, visited);
+            });
+        };
+        
+        // Find downstream tables (lower priority - only if not already upstream)
+        const findDownstreamTables = (sourceId, depth = 0, visited = new Set()) => {
+            if (visited.has(sourceId)) return;
+            
+            // Apply depth limit if set (only for downstream)
+            if (this.depthLimit !== null && depth > this.depthLimit) return;
+            
+            visited.add(sourceId);
+            
+            // Find all relationships where this table is the source
+            const outgoingRelations = this.allRelationships.filter(rel => {
+                const relKey = `${rel.source}->${rel.target}`;
+                return rel.source === sourceId && relationshipPriorities.get(relKey) !== 'suppress';
+            });
+            
+            outgoingRelations.forEach(rel => {
+                connectedRelationships.push(rel);
+                connectedTables.add(rel.target);
+                
+                // Only set positive depth if the table doesn't already have an upstream depth
+                const targetDepth = depth + 1;
+                if (!tableDepths.has(rel.target)) {
+                    tableDepths.set(rel.target, targetDepth);
+                }
+                // If it already exists as upstream (negative depth), keep the upstream priority
+                
+                findDownstreamTables(rel.target, targetDepth, visited);
+            });
+        };
+        
+        // Process upstream first (higher priority), then downstream
+        findUpstreamTables(this.selectedSourceId);
+        findDownstreamTables(this.selectedSourceId);
+        
+        // Prepare filtered nodes and links with depth information
+        this.nodes = this.allTables
+            .filter(table => connectedTables.has(table.id))
+            .map(table => ({
+                id: table.id,
+                name: table.name,
+                type: 'table',
+                radius: Math.max(30, Math.min(50, table.name.length * 3 + 20)),
+                isSource: table.id === this.selectedSourceId,
+                depth: tableDepths.get(table.id) || 0
+            }));
+        
+        this.links = connectedRelationships
+            .filter(rel => {
+                // Only include relationships where both source and target are in our filtered nodes
+                const sourceInNodes = this.nodes.some(n => n.id === rel.source);
+                const targetInNodes = this.nodes.some(n => n.id === rel.target);
+                return sourceInNodes && targetInNodes;
+            })
+            .map(rel => ({
+                source: rel.source,
+                target: rel.target,
+                job_name: rel.job_name
+            }));
+    }
+    
+    createSimulation() {
+        if (this.selectedSourceId) {
+            this.createTreeSimulation();
+        } else {
+            this.createForceSimulation();
+        }
+    }
+    
+    createForceSimulation() {
+        this.simulation = d3.forceSimulation(this.nodes)
+            .force('link', d3.forceLink(this.links).id(d => d.id).distance(200))
+            .force('charge', d3.forceManyBody().strength(-400))
+            .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+            .force('collision', d3.forceCollide().radius(d => d.radius + 15));
+    }
+    
+    createTreeSimulation() {
+        // Position nodes in tree-like hierarchy based on depth
+        this.positionNodesAsTree();
+        
+        // Create a gentler simulation for tree layout
+        this.simulation = d3.forceSimulation(this.nodes)
+            .force('link', d3.forceLink(this.links).id(d => d.id).distance(150).strength(0.5))
+            .force('charge', d3.forceManyBody().strength(-200))
+            .force('collision', d3.forceCollide().radius(d => d.radius + 10))
+            .force('x', d3.forceX(d => d.fx).strength(0.8))
+            .force('y', d3.forceY(d => d.fy).strength(0.8));
+    }
+    
+    positionNodesAsTree() {
+        // Group nodes by depth level (including negative depths for upstream)
+        const nodesByDepth = new Map();
+        this.nodes.forEach(node => {
+            const depth = node.depth || 0;
+            if (!nodesByDepth.has(depth)) {
+                nodesByDepth.set(depth, []);
+            }
+            nodesByDepth.get(depth).push(node);
+        });
+        
+        // Get the range of depths
+        const depths = Array.from(nodesByDepth.keys()).sort((a, b) => a - b);
+        const minDepth = Math.min(...depths);
+        const maxDepth = Math.max(...depths);
+        const totalLevels = maxDepth - minDepth + 1;
+        
+        const levelHeight = Math.max(120, (this.height - 100) / totalLevels);
+        const topMargin = 80;
+        
+        // Position nodes level by level
+        // Negative depths (upstream) will be at the top
+        // Zero depth (selected table) will be in the middle
+        // Positive depths (downstream) will be at the bottom
+        depths.forEach((depth, index) => {
+            const depthNodes = nodesByDepth.get(depth);
+            const y = topMargin + index * levelHeight;
+            
+            if (depthNodes.length === 1) {
+                // Center single node
+                depthNodes[0].fx = this.width / 2;
+                depthNodes[0].fy = y;
+                depthNodes[0].x = depthNodes[0].fx;
+                depthNodes[0].y = depthNodes[0].fy;
+            } else {
+                // Calculate total width needed for all nodes with proper spacing
+                const minSpacing = 20; // Minimum gap between bubble edges
+                const sideMargin = 50; // Margin from screen edges
+                
+                // Calculate total width required for all bubbles plus spacing
+                let totalBubblesWidth = 0;
+                depthNodes.forEach(node => {
+                    totalBubblesWidth += (node.radius * 2);
+                });
+                
+                const totalSpacingWidth = (depthNodes.length - 1) * minSpacing;
+                const requiredWidth = totalBubblesWidth + totalSpacingWidth;
+                const availableWidth = this.width - (sideMargin * 2);
+                
+                // If nodes fit comfortably, use calculated spacing
+                // If not, compress but maintain minimum spacing
+                let actualSpacing = minSpacing;
+                let startX = sideMargin;
+                
+                if (requiredWidth <= availableWidth) {
+                    // Nodes fit - distribute extra space evenly
+                    const extraSpace = availableWidth - requiredWidth;
+                    const extraSpacingPerGap = depthNodes.length > 1 ? extraSpace / (depthNodes.length - 1) : 0;
+                    actualSpacing = minSpacing + extraSpacingPerGap;
+                    
+                    // Center the entire group
+                    startX = (this.width - requiredWidth - (extraSpace)) / 2;
+                } else {
+                    // Nodes don't fit - use proportional scaling but maintain minimum spacing
+                    const scaleFactor = availableWidth / requiredWidth;
+                    actualSpacing = Math.max(minSpacing * scaleFactor, 5); // Never less than 5px
+                    startX = sideMargin;
+                }
+                
+                // Position nodes with calculated spacing
+                let currentX = startX;
+                depthNodes.forEach((node, nodeIndex) => {
+                    // Position at the center of the bubble
+                    node.fx = currentX + node.radius;
+                    node.fy = y;
+                    node.x = node.fx;
+                    node.y = node.fy;
+                    
+                    // Move to next position (bubble diameter + spacing)
+                    currentX += (node.radius * 2) + actualSpacing;
+                });
+                
+                // If we're still too wide, apply final centering adjustment
+                if (requiredWidth > availableWidth) {
+                    const lastNode = depthNodes[depthNodes.length - 1];
+                    const actualTotalWidth = (lastNode.fx + lastNode.radius) - (depthNodes[0].fx - depthNodes[0].radius);
+                    const centerOffset = (this.width - actualTotalWidth) / 2 - (depthNodes[0].fx - depthNodes[0].radius);
+                    
+                    // Apply centering offset to all nodes in this level
+                    depthNodes.forEach(node => {
+                        node.fx += centerOffset;
+                        node.x = node.fx;
+                    });
+                }
+            }
+        });
+    }
+    
+    render() {
+        // Clear existing elements
+        this.chartGroup.selectAll('.relationship-line').remove();
+        this.chartGroup.selectAll('.bubble').remove();
+        this.chartGroup.selectAll('.bubble-label').remove();
+        
+        // Render links (relationships) first so they appear behind nodes
+        this.linkElements = this.chartGroup.selectAll('.relationship-line')
+            .data(this.links)
+            .enter().append('line')
+            .attr('class', 'relationship-line')
+            .attr('marker-end', 'url(#arrowhead)')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', 0)
+            .attr('y2', 0)
+            .style('opacity', 0); // Start hidden until positioned properly
+        
+        // Render nodes (tables) on top of links
+        this.nodeElements = this.chartGroup.selectAll('.bubble')
+            .data(this.nodes)
+            .enter().append('circle')
+            .attr('class', 'bubble')
+            .attr('r', d => d.radius)
+            .attr('fill', '#0A2472')
+            .attr('stroke', d => d.isSource ? '#ffd700' : 'white')
+            .attr('stroke-width', d => d.isSource ? 4 : 2)
+            .call(d3.drag()
+                .on('start', (event, d) => this.dragStarted(event, d))
+                .on('drag', (event, d) => this.dragged(event, d))
+                .on('end', (event, d) => this.dragEnded(event, d)));
+        
+        // Render labels on top
+        this.labelElements = this.chartGroup.selectAll('.bubble-label')
+            .data(this.nodes)
+            .enter().append('text')
+            .attr('class', d => d.isSource ? 'bubble-label selected' : 'bubble-label')
+            .text(d => {
+                // Extract table name without schema (part after last dot)
+                const tableName = d.name.includes('.') ? d.name.split('.').pop() : d.name;
+                return tableName.length > 12 ? tableName.substring(0, 12) + '...' : tableName;
+            });
+        
+        // Set up simulation tick
+        this.simulation.on('tick', () => this.tick());
+        
+        // Set up interactions
+        this.setupInteractions();
+    }
+    
+    tick() {
+        // Calculate line positions to connect circle edges, not centers
+        this.linkElements
+            .attr('x1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Hide lines that are too short or have invalid positions
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.x) || isNaN(d.target.x)) {
+                    return d.source.x;
+                }
+                
+                const sourceRadius = d.source.radius || 30;
+                return d.source.x + (dx / distance) * sourceRadius;
+            })
+            .attr('y1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.y) || isNaN(d.target.y)) {
+                    return d.source.y;
+                }
+                
+                const sourceRadius = d.source.radius || 30;
+                return d.source.y + (dy / distance) * sourceRadius;
+            })
+            .attr('x2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.x) || isNaN(d.target.x)) {
+                    return d.source.x;
+                }
+                
+                const targetRadius = d.target.radius || 30;
+                return d.target.x - (dx / distance) * (targetRadius + 10);
+            })
+            .attr('y2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.y) || isNaN(d.target.y)) {
+                    return d.source.y;
+                }
+                
+                const targetRadius = d.target.radius || 30;
+                return d.target.y - (dy / distance) * (targetRadius + 10);
+            })
+            .attr('marker-end', d => {
+                // Only show arrow marker if line is long enough and has valid positions
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.x) || isNaN(d.target.x) || isNaN(d.source.y) || isNaN(d.target.y)) {
+                    return 'none';
+                }
+                
+                return 'url(#arrowhead)';
+            })
+            .style('opacity', d => {
+                // Hide lines that are too short or have invalid positions
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 || !isFinite(distance) || isNaN(d.source.x) || isNaN(d.target.x) || isNaN(d.source.y) || isNaN(d.target.y)) {
+                    return 0;
+                }
+                
+                return 1;
+            });
+        
+        this.nodeElements
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+        
+        this.labelElements
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
+    }
+    
+    setupInteractions() {
+        const tooltip = document.getElementById('tooltip');
+        
+        // Node interactions
+        this.nodeElements
+            .on('mouseover', (event, d) => {
+                // Add hover effects to label
+                const labelElement = this.labelElements.filter((labelData) => labelData.id === d.id);
+                if (!d.isSource) {
+                    labelElement.classed('hover', true);
+                }
+                
+                let sourceInfo = d.isSource ? '<br><strong>Selected Focus Table</strong>' : '';
+                let depthInfo = '';
+                
+                if (this.selectedSourceId && d.depth !== undefined && !d.isSource) {
+                    if (d.depth > 0) {
+                        depthInfo = `<br>Downstream Level: ${d.depth}`;
+                    } else if (d.depth < 0) {
+                        depthInfo = `<br>Upstream Level: ${Math.abs(d.depth)}`;
+                    }
+                }
+                
+                let depthLimitInfo = this.depthLimit !== null ? `<br>Showing up to Level ${this.depthLimit}` : '';
+                tooltip.innerHTML = `
+                    <strong>${d.name}</strong><br>
+                    Table ID: ${d.id}${sourceInfo}${depthInfo}${depthLimitInfo}<br>
+                    <span style="color: #ffd700;"><i class="fas fa-mouse-pointer"></i> Click to view table details</span>
+                `;
+                tooltip.style.opacity = '1';
+            })
+            .on('mousemove', (event) => {
+                tooltip.style.left = (event.pageX + 10) + 'px';
+                tooltip.style.top = (event.pageY - 10) + 'px';
+            })
+            .on('mouseout', (event, d) => {
+                // Remove hover effects from label
+                const labelElement = this.labelElements.filter((labelData) => labelData.id === d.id);
+                labelElement.classed('hover', false); // Remove hover class on mouseout
+                
+                tooltip.style.opacity = '0';
+            })
+            .on('click', (event, d) => {
+                this.onNodeClick(d);
+            });
+        
+        // Link interactions
+        this.linkElements
+            .on('mouseover', (event, d) => {
+                const sourceNode = this.nodes.find(n => n.id === d.source.id);
+                const targetNode = this.nodes.find(n => n.id === d.target.id);
+                tooltip.innerHTML = `
+                    <strong>Job: ${d.job_name}</strong><br>
+                    ${sourceNode.name} → ${targetNode.name}<br>
+                    Click for details
+                `;
+                tooltip.style.opacity = '1';
+            })
+            .on('mousemove', (event) => {
+                tooltip.style.left = (event.pageX + 10) + 'px';
+                tooltip.style.top = (event.pageY - 10) + 'px';
+            })
+            .on('mouseout', () => {
+                tooltip.style.opacity = '0';
+            })
+            .on('click', (event, d) => {
+                this.onLinkClick(d);
+            });
+    }
+    
+    setupEventHandlers() {
+        document.getElementById('resetView').addEventListener('click', () => {
+            this.svg.transition().duration(750).call(
+                d3.zoom().transform,
+                d3.zoomIdentity
+            );
+        });
+        
+        document.getElementById('fitToScreen').addEventListener('click', () => {
+            this.fitToScreen();
+        });
+        
+        document.getElementById('showLineage').addEventListener('click', () => {
+            this.showTableLineage();
+        });
+        
+        document.getElementById('clearFilter').addEventListener('click', () => {
+            this.clearFilter();
+        });
+        
+        document.getElementById('applyDepthLimit').addEventListener('click', () => {
+            this.applyDepthLimit();
+        });
+    }
+    
+    showTableLineage() {
+        const searchableInput = document.getElementById('searchableTable');
+        const selectedValue = searchableInput.value;
+        
+        if (!selectedValue || selectedValue === 'Show All Tables') {
+            alert('Please select a table first');
+            return;
+        }
+        
+        // Extract table ID from the format "Table Name (ID: 123)"
+        const idMatch = selectedValue.match(/\(ID:\s*(\d+)\)/);
+        if (!idMatch) {
+            alert('Invalid table selection. Please select a valid table from the dropdown.');
+            return;
+        }
+        
+        this.selectedSourceId = parseInt(idMatch[1]);
+        this.depthLimit = null; // Reset depth limit when showing new lineage
+        document.getElementById('depthLimit').value = ''; // Reset UI
+        
+        // Show depth limit controls and update options
+        document.getElementById('depthLimitContainer').style.display = 'block';
+        this.updateDepthLimitOptions();
+        
+        this.refreshVisualization();
+    }
+    
+    applyDepthLimit() {
+        if (!this.selectedSourceId) {
+            alert('Please select a source table first');
+            return;
+        }
+        
+        const depthLimitSelect = document.getElementById('depthLimit');
+        const selectedDepth = depthLimitSelect.value;
+        
+        this.depthLimit = selectedDepth === '' ? null : parseInt(selectedDepth);
+        this.refreshVisualization();
+    }
+    
+    clearFilter() {
+        this.selectedSourceId = null;
+        this.depthLimit = null;
+        document.getElementById('searchableTable').value = '';
+        document.getElementById('depthLimit').value = '';
+        
+        // Hide depth limit controls
+        document.getElementById('depthLimitContainer').style.display = 'none';
+        
+        this.refreshVisualization();
+    }
+    
+    updateDepthLimitOptions() {
+        if (!this.selectedSourceId) return;
+        
+        // Calculate the maximum depth in the current tree
+        const maxDepth = this.calculateMaxDepth();
+        
+        // Update the depth limit dropdown options
+        const depthLimitSelect = document.getElementById('depthLimit');
+        depthLimitSelect.innerHTML = '<option value="">No Limit (Show All Levels)</option>';
+        
+        // Add options from 0 to maxDepth
+        for (let i = 0; i <= maxDepth; i++) {
+            const option = document.createElement('option');
+            option.value = i.toString();
+            if (i === 0) {
+                option.textContent = 'Level 0 Only (Source)';
+            } else {
+                option.textContent = `Up to Level ${i}`;
+            }
+            depthLimitSelect.appendChild(option);
+        }
+        
+        // Update the help text to show the actual max depth
+        const helpText = document.querySelector('#depthLimitContainer small');
+        if (helpText) {
+            helpText.textContent = `Limit how many levels deep to show both upstream and downstream from the focus table (Max: ${maxDepth} levels)`;
+        }
+    }
+    
+    calculateMaxDepth() {
+        if (!this.selectedSourceId) return 0;
+        
+        const visitedDownstream = new Set();
+        const visitedUpstream = new Set();
+        
+        // Calculate maximum downstream depth
+        const findMaxDownstreamDepth = (sourceId, depth = 0) => {
+            if (visitedDownstream.has(sourceId)) return depth;
+            
+            visitedDownstream.add(sourceId);
+            let maxChildDepth = depth;
+            
+            const outgoingRelations = this.allRelationships.filter(rel => rel.source === sourceId);
+            outgoingRelations.forEach(rel => {
+                const childDepth = findMaxDownstreamDepth(rel.target, depth + 1);
+                maxChildDepth = Math.max(maxChildDepth, childDepth);
+            });
+            
+            return maxChildDepth;
+        };
+        
+        // Calculate maximum upstream depth
+        const findMaxUpstreamDepth = (targetId, depth = 0) => {
+            if (visitedUpstream.has(targetId)) return depth;
+            
+            visitedUpstream.add(targetId);
+            let maxParentDepth = depth;
+            
+            const incomingRelations = this.allRelationships.filter(rel => rel.target === targetId);
+            incomingRelations.forEach(rel => {
+                const parentDepth = findMaxUpstreamDepth(rel.source, depth + 1);
+                maxParentDepth = Math.max(maxParentDepth, parentDepth);
+            });
+            
+            return maxParentDepth;
+        };
+        
+        const maxDownstream = findMaxDownstreamDepth(this.selectedSourceId);
+        const maxUpstream = findMaxUpstreamDepth(this.selectedSourceId);
+        
+        // Return the maximum of upstream and downstream depths
+        return Math.max(maxDownstream, maxUpstream);
+    }
+    
+    refreshVisualization() {
+        // Stop current simulation
+        this.simulation.stop();
+        
+        // Prepare new data
+        this.prepareData();
+        
+        // Recreate simulation with new data
+        this.createSimulation();
+        
+        // Re-render
+        this.render();
+        
+        // Fit to screen after a brief delay
+        setTimeout(() => {
+            this.fitToScreen();
+        }, 500);
+    }
+    
+    fitToScreen() {
+        const bounds = this.chartGroup.node().getBBox();
+        const fullWidth = this.width;
+        const fullHeight = this.height;
+        const width = bounds.width;
+        const height = bounds.height;
+        const midX = bounds.x + width / 2;
+        const midY = bounds.y + height / 2;
+        
+        if (width === 0 || height === 0) return;
+        
+        const scale = Math.min(fullWidth / width, fullHeight / height) * 0.8;
+        const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
+        
+        this.svg.transition().duration(750).call(
+            d3.zoom().transform,
+            d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+        );
+    }
+    
+    dragStarted(event, d) {
+        if (!event.active) this.simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    
+    dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    
+    dragEnded(event, d) {
+        if (!event.active) this.simulation.alphaTarget(0);
+        // In tree mode, maintain fixed positions
+        if (this.selectedSourceId) {
+            // Keep nodes in their tree positions
+            d.fx = d.fx;
+            d.fy = d.fy;
+        } else {
+            // Allow free movement in force layout
+            d.fx = null;
+            d.fy = null;
+        }
+    }
+    
+    onNodeClick(node) {
+        console.log('Clicked node:', node);
+        // Redirect to table details page
+        window.location.href = `/tables/view/${node.id}/`;
+    }
+    
+    onLinkClick(link) {
+        console.log('Clicked link:', link);
+        const sourceNode = this.nodes.find(n => n.id === link.source.id);
+        const targetNode = this.nodes.find(n => n.id === link.target.id);
+        alert(`Job: ${link.job_name}\nFrom: ${sourceNode.name}\nTo: ${targetNode.name}\n\nFuture feature: View job details and edit relationship`);
+    }
+}
+
+// Initialize the chart when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (tablesData.length > 0) {
+        window.lineageChart = new DataLineageChart('lineage-container', tablesData, relationshipsData);
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (window.lineageChart) {
+        setTimeout(() => {
+            window.lineageChart.init();
+        }, 100);
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Job - Data Lineage{% endblock %}
+
+{% block page_title %}Edit Job{% endblock %}
+{% block page_description %}Update job information{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Edit Job Information</h3>
+        <p class="card-subtitle">Update the Job Details</p>
+    </div>
+    <div class="card-body">
+        <form method="post" id="editJobForm">
+            {% csrf_token %}
+            
+            <!-- Job ID (Read-only) -->
+            <!-- <div class="form-group">
+                <label for="job_id" class="form-label">JOB ID</label>
+                <input type="text" id="job_id" name="job_id" class="form-control" value="{{ job.job_id }}" readonly>
+                <small class="form-text">Job ID cannot be changed</small>
+            </div> -->
+            
+            <!-- Job Name -->
+            <div class="form-group">
+                <label for="job_name" class="form-label">Job Name</label>
+                <input type="text" id="job_name" name="job_name" class="form-control" value="{{ job.job_name }}" required>
+                <small class="form-text">Enter a unique name for your job</small>
+            </div>
+
+            <!-- PIC Job -->
+            <!-- <div class="form-group">
+                <label for="pic_job" class="form-label">PIC Job</label>
+                <input type="text" id="pic_job" name="pic_job" class="form-control" value="{{ job.pic_job }}" >
+                <small class="form-text">Enter the person in charge for this job</small>
+            </div> -->
+
+            <div class="mb-3">
+                <label for="developer" class="form-label fw-semibold mb-1">
+                    Developer (PIC)
+                </label>
+
+                <select name="developer"
+                        id="developer"
+                        class="form-select choices-multiple"
+                        multiple
+                        style="width: 100%;">
+                    <option value=""></option>
+
+                    {% for dev in developers %}
+                        <option value="{{ dev.developer_id }}">
+                            {{ dev.developer_name }} ({{ dev.department }})
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <div class="form-text mt-1">
+                    Tidak ada di list?
+                    <a href="{% url 'create_developer' %}" class="link-primary fw-semibold">
+                        Tambah developer baru
+                    </a>
+                </div>
+            </div>
+            
+
+
+
+            
+            <!-- Action Buttons -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{% url 'job_list' %}" class="btn btn-danger">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageCard" class="card mt-4" style="display: none;">
+    <div class="card-body">
+        <div id="messageContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<style>
+    /* Styling agar Choices.js lebih menyatu dengan Bootstrap 5 */
+    .choices__inner {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        min-height: 38px;
+        padding: 4px 10px;
+    }
+    .choices[data-type*="select-multiple"] .choices__button, 
+    .choices[data-type*="text"] .choices__button {
+        border-left: 1px solid rgba(255,255,255,0.3);
+    }
+    .choices__list--multiple .choices__item {
+        background-color: #0d6efd; /* Warna Primary Bootstrap */
+        border: 1px solid #0d6efd;
+    }
+    .is-focused .choices__inner {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Menghilangkan pesan 'No choices to choose from' saat user ingin input manual */
+    .choices__list--dropdown .choices__item--selectable.choices__placeholder {
+        display: none;
+    }
+    /* Memastikan tag table baru berwarna berbeda (opsional) */
+    .choices__list--multiple .choices__item {
+        background-color: #198754; /* Warna hijau success untuk membedakan */
+        border: 1px solid #198754;
+    }
+
+    .choices {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .choices__inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Input field */
+    .choices__input {
+        width: 100% !important;
+    }
+
+    /* Dropdown agar sejajar */
+    .choices__list--dropdown {
+        width: 100%;
+    }
+
+    .card-body {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    }
+
+    .choices__list--multiple .choices__item {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    }
+
+    .card,
+    .card-body,
+    .form-select,
+    .form-control,
+    .col-12,
+    .col-lg-10,
+    .col-xl-9 {
+        overflow: visible !important;
+    }
+
+    *, *::before, *::after {
+    box-sizing: border-box;
+    }
+
+    /* FIX Choices overflow di Bootstrap row */
+    .row .choices {
+        width: 100% !important;
+        max-width: calc(100% - 1px) !important;
+    }
+
+    .row .choices__inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .row {
+    margin-left: 0;
+    margin-right: 0;
+    }
+
+    .upload-job-page .alert {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    
+   
+
+</style>
+
+
+<script>
+document.getElementById('editJobForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    // Hide previous messages
+    document.getElementById('messageCard').style.display = 'none';
+    
+    fetch('{% url "edit_job" job.job_id %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Redirect after a delay
+            setTimeout(() => {
+                window.location.href = '{% url "job_list" %}';
+            }, 1500);
+        } else {
+            showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        console.error('Error:', error);
+        showMessage('An error occurred while updating the job. Please try again.', 'error');
+    });
+});
+
+function showMessage(message, type) {
+    const messageCard = document.getElementById('messageCard');
+    const messageContent = document.getElementById('messageContent');
+    
+    let alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    let icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+    
+    messageContent.innerHTML = `
+        <div class="alert ${alertClass}">
+            <h5><i class="${icon}"></i> ${type === 'success' ? 'Success' : 'Error'}</h5>
+            <p>${message}</p>
+        </div>
+    `;
+    
+    messageCard.style.display = 'block';
+    messageCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+$(document).ready(function () {
+    /* ===============================
+       Init Choices.js
+    =============================== */
+    const element = document.getElementById('developer');
+    const developerChoices = new Choices(element, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: '-- Select Developers --',
+        searchPlaceholderValue: 'Cari nama developer...',
+        noResultsText: 'Developer tidak ditemukan',
+        itemSelectText: 'Klik untuk memilih',
+    });
+    
+    /* ===============================
+       Set Pre-selected Developers
+    =============================== */
+    // Get current developers from the job
+    const selectedDevelopers = [
+        {% for dev in job.developers.all %}
+            '{{ dev.developer_id }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Set the selected values
+    if (selectedDevelopers.length > 0) {
+        developerChoices.setChoiceByValue(selectedDevelopers);
+    }
+});
+</script>
+{% endblock %}

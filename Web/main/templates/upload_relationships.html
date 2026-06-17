@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Relationships - Data Lineage{% endblock %}
+
+{% block page_title %}Upload Data Relationships{% endblock %}
+{% block page_description %}Upload CSV file to define data lineage relationships{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Upload Relationships CSV</h3>
+        <p class="card-subtitle">Define data lineage relationships between tables</p>
+    </div>
+    <div class="card-body">
+        <!-- Instructions -->
+        <div class="alert alert-info mb-4">
+            <h5><i class="fas fa-info-circle"></i> CSV Format Requirements</h5>
+            <p>Your CSV file must contain the following columns:</p>
+            <ul>
+                <li><strong>Job Name</strong>: The name of the data processing job/pipeline</li>
+                <li><strong>Target Table Name</strong>: The destination table that receives data</li>
+                <li><strong>Source Table Names</strong>: The source table(s) that provide data (comma-separated for multiple sources)</li>
+            </ul>
+            <p class="mb-2"><strong>Important Notes:</strong></p>
+            <ul>
+                <li>All table names must already exist in the system</li>
+                <li>Multiple source tables can be listed separated by commas</li>
+                <li>Spaces around commas will be automatically trimmed</li>
+            </ul>
+            <p class="mb-0">Example CSV content:</p>
+            <pre class="mt-2">Job Name,Target Table Name,Source Table Names
+ETL_Process_1,sales_summary,"orders, customers"
+Data_Pipeline_2,user_analytics,users
+Complex_ETL,final_report,"sales_summary, user_analytics, inventory"</pre>
+        </div>
+
+        <!-- Upload Form -->
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="csv_file" class="form-label">Select CSV File</label>
+                <input type="file" id="csv_file" name="csv_file" class="form-control" accept=".csv" required>
+                <small class="form-text">Choose a CSV file containing relationship information</small>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload & Create Relationships
+                </button>
+                <a href="{% url 'relationship_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> View Relationships
+                </a>
+                <a href="{% url 'data_lineage' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Card (Initially Hidden) -->
+<div id="resultsCard" class="card mt-4" style="display: none;">
+    <div class="card-header">
+        <h3 class="card-title">Upload Results</h3>
+    </div>
+    <div class="card-body">
+        <div id="resultsContent"></div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
+    
+    // Hide previous results
+    document.getElementById('resultsCard').style.display = 'none';
+    
+    fetch('{% url "upload_relationships" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        // Show results
+        showResults(data);
+        
+        // If successful, optionally redirect after a delay
+        if (data.success && data.error_count === 0) {
+            setTimeout(() => {
+                window.location.href = '{% url "relationship_list" %}';
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        console.error('Error:', error);
+        showResults({
+            success: false,
+            error: 'An error occurred while uploading the file. Please try again.'
+        });
+    });
+});
+
+function showResults(data) {
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsContent = document.getElementById('resultsContent');
+    
+    let html = '';
+    
+    if (data.success) {
+        // Success message
+        html += `<div class="alert alert-success">
+            <h5><i class="fas fa-check-circle"></i> ${data.message}</h5>
+        </div>`;
+        
+        // Created relationships
+        if (data.created_relationships && data.created_relationships.length > 0) {
+            html += `<div class="mb-3">
+                <h6>Created Relationships (${data.created_count}):</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Job Name</th>
+                                <th>Source Table</th>
+                                <th>Target Table</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            data.created_relationships.forEach(rel => {
+                html += `<tr>
+                    <td>${rel.job_name}</td>
+                    <td>${rel.source_table}</td>
+                    <td>${rel.target_table}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div></div>`;
+        }
+        
+        // Errors (if any)
+        if (data.errors && data.errors.length > 0) {
+            html += `<div class="mb-3">
+                <h6 class="text-warning">Errors (${data.error_count}):</h6>
+                <ul class="list-unstyled">`;
+            
+            data.errors.forEach(error => {
+                html += `<li class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${error}</li>`;
+            });
+            
+            html += `</ul></div>`;
+        }
+        
+        if (data.error_count === 0) {
+            html += `<p class="text-success"><i class="fas fa-info-circle"></i> Redirecting to relationships list in 3 seconds...</p>`;
+        }
+    } else {
+        // Error message
+        html += `<div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-circle"></i> Upload Failed</h5>
+            <p>${data.error}</p>
+        </div>`;
+    }
+    
+    resultsContent.innerHTML = html;
+    resultsCard.style.display = 'block';
+    
+    // Scroll to results
+    resultsCard.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

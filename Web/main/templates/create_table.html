@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Tables - Data Lineage{% endblock %}
+{% block page_title %}Create New Tables{% endblock %}
+{% block page_description %}Create tables via CSV upload or manual entry{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" id="createTableTab">
+            <li class="nav-item">
+                <button class="nav-link active" id="btn-csv" onclick="switchTab('csv-panel', this)" type="button">
+                    <i class="fas fa-file-csv"></i> Upload CSV
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="btn-manual" onclick="switchTab('manual-panel', this)" type="button">
+                    <i class="fas fa-keyboard"></i> Manual Input
+                </button>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="card-body">
+        <div class="tab-content">
+            
+            <div class="tab-pane active" id="csv-panel" style="display: block;">
+                <div class="alert alert-info mb-4">
+                    <h5><i class="fas fa-info-circle"></i> CSV Format Requirements</h5>
+                    <ul class="mb-2">
+                        <li><strong>table_name</strong> (Required, Unique)</li>
+                        <li><strong>table_category</strong> (Optional)</li>
+                        <li><strong>table_desc</strong> (Optional)</li>
+                    </ul>
+                    <div class="bg-light p-2 rounded border">
+                        <small class="text-muted">Example:</small>
+                        <pre class="mb-0 mt-1">table_name,table_category,table_desc
+users,STAGING,Table storing user credentials</pre>
+                    </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action_type" value="upload_csv">
+                    <div class="mb-3">
+                        <label class="form-label">Select CSV File</label>
+                        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload & Create
+                    </button>
+
+                    <a href="{% url 'table_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+
+                </form>
+            </div>
+
+            <div class="tab-pane" id="manual-panel" style="display: none;">
+                <div class="alert alert-light border mb-4">
+                    <i class="fas fa-pen"></i> Fill in the form below to create a single table.
+                </div>
+
+                <form method="post" id="manualForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action_type" value="manual_create">
+
+                    <div class="mb-3">
+                        <label class="form-label">Table Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="table_name" placeholder="e.g., customer_data" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select form-control" name="table_category">
+                            <option value="OTHER" selected>OTHER</option>
+                            <option value="DATAMART">DATAMART</option>
+                            <option value="SOURCE DATA">SOURCE DATA</option>
+                            <option value="STAGING">STAGING</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="table_desc" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Create Table
+                    </button>
+
+                    <a href="{% url 'table_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="resultsCard" class="card mt-4" style="display: none;">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">Result</h5>
+    </div>
+    <div class="card-body">
+        <div id="resultsContent"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 1. FUNGSI SWITCH TAB MANUAL (Solusi Masalah Tumpuk)
+    function switchTab(panelId, btnElement) {
+        // A. Sembunyikan SEMUA panel
+        const allPanels = document.querySelectorAll('.tab-pane');
+        allPanels.forEach(panel => {
+            panel.style.display = 'none'; // Paksa hidden via CSS inline
+            panel.classList.remove('active');
+        });
+
+        // B. Matikan status active di SEMUA tombol
+        const allBtns = document.querySelectorAll('.nav-link');
+        allBtns.forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // C. Tampilkan Panel yang dipilih
+        const targetPanel = document.getElementById(panelId);
+        if(targetPanel) {
+            targetPanel.style.display = 'block'; // Paksa show
+            targetPanel.classList.add('active');
+        }
+
+        // D. Aktifkan Tombol yang diklik
+        if(btnElement) {
+            btnElement.classList.add('active');
+        }
+    }
+
+    // 2. LOGIKA FORM SUBMIT (Sama seperti sebelumnya)
+    function handleFormSubmit(e, formElement) {
+        e.preventDefault();
+        const formData = new FormData(formElement);
+        const submitBtn = formElement.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+        document.getElementById('resultsCard').style.display = 'none';
+        
+        fetch('{% url "create_table" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            
+            if(data.success && formData.get('action_type') === 'manual_create') {
+                formElement.reset();
+            }
+            showResults(data);
+            if (data.success && (!data.errors || data.error_count === 0)) {
+                setTimeout(() => {
+                    window.location.href = '{% url "table_list" %}';
+                }, 1500);
+            }
+        })
+        .catch(error => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            showResults({success: false, error: 'Error occurred.'});
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bind form listeners
+        const uploadForm = document.getElementById('uploadForm');
+        if(uploadForm) uploadForm.addEventListener('submit', function(e) { handleFormSubmit(e, this); });
+
+        const manualForm = document.getElementById('manualForm');
+        if(manualForm) manualForm.addEventListener('submit', function(e) { handleFormSubmit(e, this); });
+    });
+
+    function showResults(data) {
+        const resultsCard = document.getElementById('resultsCard');
+        const resultsContent = document.getElementById('resultsContent');
+        let html = '';
+        if (data.success) {
+            html += `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${data.message}</div>`;
+        } else {
+            html += `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${data.error || 'Error'}</div>`;
+        }
+        resultsContent.innerHTML = html;
+        resultsCard.style.display = 'block';
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Styling Tab agar terlihat native */
+    .nav-tabs .nav-link {
+        color: #495057;
+        cursor: pointer;
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: bold;
+        color: #000;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+    /* Pastikan tab-pane benar-benar hilang jika tidak ada style block */
+    .tab-pane {
+        display: none; 
+    }
+</style>
+{% endblock %}

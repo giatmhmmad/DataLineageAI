@@ -1,0 +1,109 @@
+{% load tz %}
+
+<!-- Done Table Body -->
+<tbody id="done-tbody">
+    {% for job in sessions %}
+        {% if job.current_status == 'Done' %}
+        <tr>
+            <td>{{ job.job_name }}</td>
+            <td>{{ job.original_upload_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>{{ job.last_update_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>
+                {% if job.job_id %}
+                <a href="{% url 'download_jobs_details' job.job_id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-download me-1"></i> Download Details
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">No done uploads found.</td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+<!-- On Progress Table Body -->
+<tbody id="progress-tbody">
+    {% for job in sessions %}
+        {% if job.current_status == 'On Progress' and job.last_error == None %}
+        <tr>
+            <td>{{ job.job_name }}</td>
+            <td>{{ job.latest_log_message }}</td>
+            <td>{{ job.original_upload_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>{{ job.last_update_time|localtime|date:"d M Y, H:i" }} WIB</td>
+        </tr>
+        {% endif %}
+    {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">No on progress uploads found.</td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+<!-- Need Confirmation Table Body -->
+<tbody id="confirmation-tbody">
+    {% for job in sessions %}
+        {% if job.current_status == 'Need Confirmation' %}
+        <tr>
+            <td>{{ job.job_name }}</td>
+            <td>{{ job.original_upload_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>{{ job.last_update_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-warning btn-open-bulk-modal"
+                        data-job-name="{{ job.job_name }}">
+                    <i class="fas fa-list-check"></i> Review Schema
+                </button>
+
+                <template class="table-data-source">
+                    {% for table in job.stagingdetectedtables_set.all %}
+                        {% if table.table_category == 'UNKNOWN' %}
+                        <tr>
+                            <td class="align-middle">
+                                <span>{{ table.table_name }}</span>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm border-secondary" 
+                                        name="category_{{ table.table_id }}" required>
+                                    <option value="" {% if not table.table_category %}selected{% endif %} disabled>Select Category</option>
+                                    <option value="DATAMART" {% if table.table_category == 'DATAMART' %}selected{% endif %}>DATAMART</option>
+                                    <option value="SOURCE DATA" {% if table.table_category == 'SOURCE DATA' %}selected{% endif %}>SOURCE DATA</option>
+                                    <option value="STAGING" {% if table.table_category == 'STAGING' %}selected{% endif %}>STAGING</option>
+                                    <option value="OTHER" {% if table.table_category == 'OTHER' %}selected{% endif %}>OTHER</option>
+                                    <option value="UNKNOWN" {% if table.table_category == 'UNKNOWN' %}selected{% endif %}>UNKNOWN</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">No tables with UNKNOWN category</td>
+                    </tr>
+                    {% endfor %}
+                </template>
+            </td>
+        </tr>
+        {% endif %}
+    {% empty %}
+        <tr><td colspan="4" class="text-center">No uploads needing confirmation.</td></tr>
+    {% endfor %}
+</tbody>
+
+<!-- Upload Failed Table Body -->
+<tbody id="failed-tbody">
+    {% for job in sessions %}
+        {% if job.current_status == 'Upload Failed' %}
+        <tr>
+            <td>{{ job.job_name }}</td>
+            <td class="text-danger small">{{ job.last_error|default:"Unknown Error" }}</td>
+            <td>{{ job.original_upload_time|localtime|date:"d M Y, H:i" }} WIB</td>
+            <td>{{ job.last_update_time|localtime|date:"d M Y, H:i" }} WIB</td>
+        </tr>
+        {% endif %}
+    {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">No failed uploads found.</td>
+        </tr>
+    {% endfor %}
+</tbody>

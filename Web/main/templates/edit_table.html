@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Table - Data Lineage{% endblock %}
+
+{% block page_title %}Edit Table{% endblock %}
+{% block page_description %}Update table information{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Edit Table Information</h3>
+    </div>
+    <div class="card-body">
+        <form method="post" id="editTableForm">
+            {% csrf_token %}
+
+            <input type="hidden" name="table_id" value="{{ table.table_id }}">
+            
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Table Name</label>
+                <input type="text" name="table_name" class="form-control" value="{{ table.table_name }}" required>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Category</label>
+                <select class="form-select form-control" name="table_category" required>
+                    <option value="OTHER" {% if table.table_category == 'OTHER' %}selected{% endif %}>OTHER</option>
+                    <option value="DATAMART" {% if table.table_category == 'DATAMART' %}selected{% endif %}>DATAMART</option>
+                    <option value="SOURCE DATA" {% if table.table_category == 'SOURCE DATA' %}selected{% endif %}>SOURCE DATA</option>
+                    <option value="STAGING" {% if table.table_category == 'STAGING' %}selected{% endif %}>STAGING</option>
+                </select>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label fw-bold">Table Description</label>
+                <textarea name="table_desc" class="form-control" rows="2">{{ table.table_desc }}</textarea>
+            </div>
+
+            <div class="card bg-light border-0 mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <label class="form-label fw-bold h5 mb-0"><i class="fas fa-columns"></i> Column Configuration</label>
+                        <button type="button" class="btn btn-sm btn-success" id="btnAddColumn">
+                            <i class="fas fa-plus"></i> Add Column
+                        </button>
+                    </div>
+
+                    <input type="hidden" name="deleted_col_ids" id="deletedColIds" value="">
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover bg-white" id="columnsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 30%">Column Name</th>
+                                    <th style="width: 20%">Data Type</th>
+                                    <th style="width: 40%">Description</th>
+                                    <th style="width: 10%" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="columnsTableBody">
+                                {% if columns %}
+                                    {% for col in columns %}
+                                    <tr data-id="{{ col.details_id }}">
+                                        <input type="hidden" name="col_id[]" value="{{ col.details_id }}">
+                                        
+                                        <td>
+                                            <input type="text" name="col_name[]" class="form-control form-control-sm" value="{{ col.column_name }}" required placeholder="e.g., user_id">
+                                        </td>
+                                        <td>
+                                            <input type="text" name="col_type[]" class="form-control form-control-sm" value="{{ col.data_type }}" placeholder="e.g., int4">
+                                        </td>
+                                        <td>
+                                            <input type="text" name="col_desc[]" class="form-control form-control-sm" value="{{ col.column_desc }}" placeholder="Description...">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr id="emptyRowMessage">
+                                        <td colspan="4" class="text-center text-muted py-3">
+                                            <em>No columns defined yet. Click "Add Column" to start.</em>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{% url 'table_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="messageCard" class="card mt-4" style="display: none;">
+    <div class="card-body">
+        <div id="messageContent"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('columnsTableBody');
+    const btnAdd = document.getElementById('btnAddColumn');
+    const emptyMsg = document.getElementById('emptyRowMessage');
+    const deletedInput = document.getElementById('deletedColIds');
+    let deletedIds = [];
+
+    // --- 1. Fungsi Tambah Baris ---
+    btnAdd.addEventListener('click', function() {
+        // Hapus pesan "No columns" jika ada
+        if (emptyMsg) emptyMsg.style.display = 'none';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <input type="hidden" name="col_id[]" value="new"> <td>
+                <input type="text" name="col_name[]" class="form-control form-control-sm" required placeholder="Column Name">
+            </td>
+            <td>
+                <input type="text" name="col_type[]" class="form-control form-control-sm" placeholder="Data Type">
+            </td>
+            <td>
+                <input type="text" name="col_desc[]" class="form-control form-control-sm" placeholder="Description">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    // --- 2. Fungsi Hapus Baris (Event Delegation) ---
+    tableBody.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-row')) {
+            const row = e.target.closest('tr');
+            const idInput = row.querySelector('input[name="col_id[]"]');
+            
+            // Cek apakah ini data existing (punya ID angka) atau baris baru (value="new")
+            if (idInput && idInput.value !== 'new') {
+                // Masukkan ID ke array deletedIds
+                deletedIds.push(idInput.value);
+                deletedInput.value = JSON.stringify(deletedIds);
+                console.log('Marked for deletion:', deletedInput.value);
+            }
+
+            row.remove();
+
+            // Jika tabel kosong kembali, tampilkan pesan empty (opsional)
+            if (tableBody.children.length === 0 || (tableBody.children.length === 1 && tableBody.children[0].id === 'emptyRowMessage')) {
+                if (emptyMsg) emptyMsg.style.display = 'table-row';
+            }
+        }
+    });
+
+    // --- 3. AJAX Submit Logic (Existing) ---
+    document.getElementById('editTableForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+        
+        document.getElementById('messageCard').style.display = 'none';
+        
+        fetch('{% url "edit_table" table.table_id %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            
+            if (data.success) {
+                showMessage(data.message, 'success');
+                setTimeout(() => {
+                    window.location.href = '{% url "table_list" %}'; // Sesuaikan redirect jika perlu
+                }, 1500);
+            } else {
+                showMessage(data.error || 'Unknown error', 'error');
+            }
+        })
+        .catch(error => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            console.error('Error:', error);
+            showMessage('An error occurred. Please try again.', 'error');
+        });
+    });
+
+    function showMessage(message, type) {
+        const messageCard = document.getElementById('messageCard');
+        const messageContent = document.getElementById('messageContent');
+        let alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        
+        messageContent.innerHTML = `
+            <div class="alert ${alertClass} mb-0">
+                <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
+            </div>
+        `;
+        messageCard.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

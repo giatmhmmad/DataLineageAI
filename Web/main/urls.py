@@ -30,6 +30,10 @@ urlpatterns = [
     path('jobs/download_jobs_details/<int:job_id>/', download_job_detail_to_excel, name='download_jobs_details'),
     path('api/get-tables/', get_tables, name='get_tables'),
     path('api/n8n/lineage/', receive_n8n_lineage, name='receive_n8n_lineage'),
+    path('api/lineage/<int:table_id>/', api_get_lineage, name='api_lineage'),
+    path('api/tables/search/', api_search_tables, name='api_search_tables'),
+    path('api/jobs/<int:job_id>/relationships/add/', api_add_relationship, name='api_add_relationship'),
+    path('api/relationships/<int:relationship_id>/delete/', api_delete_relationship, name='api_delete_relationship'),
 
 
     path('upload_logs/', upload_logs, name='upload_logs'),

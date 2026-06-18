@@ -3,296 +3,831 @@
 {% block title %}Edit Job - Data Lineage{% endblock %}
 
 {% block page_title %}Edit Job{% endblock %}
-{% block page_description %}Update job information{% endblock %}
+{% block page_description %}Update job information and manage source table relationships{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<style>
+/* ── Choices.js overrides ─────────────────────────────────── */
+.choices__inner {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    min-height: 38px;
+    padding: 4px 10px;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+.choices[data-type*="select-multiple"] .choices__button,
+.choices[data-type*="text"] .choices__button {
+    border-left: 1px solid rgba(255,255,255,.3);
+}
+.choices__list--multiple .choices__item {
+    background-color: var(--darkest-blue, #00005a);
+    border: 1px solid var(--darkest-blue, #00005a);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.is-focused .choices__inner { border-color: #86b7fe; }
+.choices { width: 100% !important; max-width: 100% !important; }
+.choices__list--dropdown { width: 100%; }
+
+/* ── Section card ─────────────────────────────────────────── */
+.rel-section {
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+
+.rel-section-header {
+    background: var(--gray-50, #f8fafc);
+    border-bottom: 1px solid var(--gray-200, #e2e8f0);
+    padding: .85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.rel-section-header h5 {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--dark-text, #1e293b);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rel-section-body { padding: 1.25rem; }
+
+/* ── Target selector tabs ─────────────────────────────────── */
+.target-tabs {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.target-tab {
+    padding: .35rem .85rem;
+    border-radius: 20px;
+    border: 1px solid var(--gray-300, #cbd5e1);
+    background: #fff;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--dark-text, #1e293b);
+}
+.target-tab:hover { border-color: var(--darkest-blue, #00005a); color: var(--darkest-blue, #00005a); }
+.target-tab.active {
+    background: var(--darkest-blue, #00005a);
+    color: #fff;
+    border-color: var(--darkest-blue, #00005a);
+}
+
+/* ── Table search / picker ────────────────────────────────── */
+.table-picker-wrap {
+    position: relative;
+}
+
+.table-picker-wrap .picker-icon {
+    position: absolute;
+    left: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--light-text, #64748b);
+    pointer-events: none;
+    z-index: 1;
+}
+
+#sourceSearch {
+    padding-left: 2.25rem;
+    border-radius: 6px;
+    border: 1px solid var(--gray-300, #cbd5e1);
+    font-size: .875rem;
+    height: 38px;
+    width: 100%;
+}
+
+#sourceSearch:focus {
+    border-color: var(--darkest-blue, #00005a);
+    box-shadow: 0 0 0 .2rem rgba(0,0,90,.12);
+    outline: none;
+}
+
+/* Picker dropdown */
+#pickerDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--gray-200, #e2e8f0);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 9999;
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+}
+
+.picker-item {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .85rem;
+    cursor: pointer;
+    font-size: .82rem;
+    border-bottom: 1px solid var(--gray-100, #f1f5f9);
+    transition: background .15s;
+}
+.picker-item:last-child { border-bottom: none; }
+.picker-item:hover { background: var(--lightest-blue, #a9d2da); }
+.picker-item.selected { background: #e0edff; font-weight: 600; }
+
+.picker-item .pi-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--dark-text, #1e293b);
+}
+
+.picker-item .pi-name mark {
+    background: #fce036;
+    color: var(--darkest-blue, #00005a);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.cat-badge {
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.cat-DATAMART    { background: #dbeafe; color: #1d4ed8; }
+.cat-SOURCE      { background: #dcfce7; color: #166534; }
+.cat-STAGING     { background: #fef9c3; color: #854d0e; }
+.cat-OTHER       { background: var(--gray-100, #f1f5f9); color: var(--light-text, #64748b); }
+
+/* ── Relationship rows table ──────────────────────────────── */
+.rel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.rel-table thead th {
+    background: var(--gray-50, #f8fafc);
+    padding: .6rem .85rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--light-text, #64748b);
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-bottom: 1px solid var(--gray-200, #e2e8f0);
+}
+
+.rel-table tbody td {
+    padding: .65rem .85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--gray-100, #f1f5f9);
+}
+
+.rel-table tbody tr:hover { background: var(--gray-50, #f8fafc); }
+.rel-table tbody tr:last-child td { border-bottom: none; }
+
+.rel-row-new {
+    animation: fadeIn .4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.flow-arrow {
+    color: var(--light-text, #64748b);
+    font-size: .9rem;
+}
+
+/* ── Status toast ─────────────────────────────────────────── */
+#relToast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    min-width: 260px;
+    z-index: 99999;
+    padding: .85rem 1.2rem;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    font-size: .875rem;
+    display: none;
+    align-items: center;
+    gap: .6rem;
+    font-weight: 500;
+}
+.toast-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.toast-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.toast-warn    { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+
+.form-section-title {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--light-text, #64748b);
+    margin-bottom: .75rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--gray-100, #f1f5f9);
+}
+
+.empty-rel {
+    text-align: center;
+    padding: 2rem;
+    color: var(--light-text, #64748b);
+    font-size: .875rem;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Edit Job Information</h3>
-        <p class="card-subtitle">Update the Job Details</p>
+        <h3 class="card-title">Edit Job: {{ job.job_name }}</h3>
+        <p class="card-subtitle">Update job information and manage source table relationships</p>
     </div>
     <div class="card-body">
+
+        <!-- ─── Job Info Form ──────────────────────────────────────── -->
         <form method="post" id="editJobForm">
             {% csrf_token %}
-            
-            <!-- Job ID (Read-only) -->
-            <!-- <div class="form-group">
-                <label for="job_id" class="form-label">JOB ID</label>
-                <input type="text" id="job_id" name="job_id" class="form-control" value="{{ job.job_id }}" readonly>
-                <small class="form-text">Job ID cannot be changed</small>
-            </div> -->
-            
-            <!-- Job Name -->
+
+            <p class="form-section-title"><i class="fas fa-info-circle"></i> Job Information</p>
+
             <div class="form-group">
                 <label for="job_name" class="form-label">Job Name</label>
-                <input type="text" id="job_name" name="job_name" class="form-control" value="{{ job.job_name }}" required>
-                <small class="form-text">Enter a unique name for your job</small>
+                <input type="text" id="job_name" name="job_name" class="form-control"
+                       value="{{ job.job_name }}" required>
+                <small class="form-text">Enter a unique name for this job</small>
             </div>
 
-            <!-- PIC Job -->
-            <!-- <div class="form-group">
-                <label for="pic_job" class="form-label">PIC Job</label>
-                <input type="text" id="pic_job" name="pic_job" class="form-control" value="{{ job.pic_job }}" >
-                <small class="form-text">Enter the person in charge for this job</small>
-            </div> -->
-
             <div class="mb-3">
-                <label for="developer" class="form-label fw-semibold mb-1">
-                    Developer (PIC)
-                </label>
-
-                <select name="developer"
-                        id="developer"
-                        class="form-select choices-multiple"
-                        multiple
-                        style="width: 100%;">
+                <label for="developer" class="form-label fw-semibold mb-1">Developer (PIC)</label>
+                <select name="developer" id="developer" class="form-select" multiple style="width:100%;">
                     <option value=""></option>
-
                     {% for dev in developers %}
                         <option value="{{ dev.developer_id }}">
                             {{ dev.developer_name }} ({{ dev.department }})
                         </option>
                     {% endfor %}
                 </select>
-
                 <div class="form-text mt-1">
                     Tidak ada di list?
-                    <a href="{% url 'create_developer' %}" class="link-primary fw-semibold">
-                        Tambah developer baru
-                    </a>
+                    <a href="{% url 'create_developer' %}" class="link-primary fw-semibold">Tambah developer baru</a>
                 </div>
             </div>
-            
 
-
-
-            
-            <!-- Action Buttons -->
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Changes
+            <div class="form-actions" style="margin-bottom:0; padding-bottom:0;">
+                <button type="submit" class="btn btn-primary" id="saveJobBtn">
+                    <i class="fas fa-save"></i> Save Job Info
                 </button>
+                <a href="{% url 'view_job' job.job_id %}" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> View Job
+                </a>
                 <a href="{% url 'job_list' %}" class="btn btn-danger">
                     <i class="fas fa-times"></i> Cancel
                 </a>
             </div>
         </form>
-    </div>
+
+        <!-- ─── Relationships Section ─────────────────────────────── -->
+        <div class="rel-section">
+            <div class="rel-section-header">
+                <h5><i class="fas fa-project-diagram"></i> Source Table Relationships
+                    <span class="badge badge-info" id="relCount">{{ relationships|length }}</span>
+                </h5>
+                <button class="btn btn-sm btn-primary" id="toggleAddPanel">
+                    <i class="fas fa-plus"></i> Add Source Table
+                </button>
+            </div>
+
+            <div class="rel-section-body">
+
+                <!-- ── Add Relationship Panel (hidden by default) ── -->
+                <div id="addPanel" style="display:none; margin-bottom:1.25rem;
+                     padding:1rem; background:var(--gray-50,#f8fafc);
+                     border-radius:8px; border:1px solid var(--gray-200,#e2e8f0);">
+
+                    <p class="form-section-title" style="margin-bottom:.85rem;">
+                        <i class="fas fa-plus-circle"></i> Add New Source → Target Relationship
+                    </p>
+
+                    <div class="row g-3 align-items-end">
+                        <!-- Source Table picker -->
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold" style="font-size:.85rem;">
+                                <i class="fas fa-arrow-right text-secondary"></i> Source Table (Input)
+                            </label>
+                            <div class="table-picker-wrap">
+                                <i class="fas fa-search picker-icon"></i>
+                                <input type="text" id="sourceSearch" placeholder="Search source table…" autocomplete="off">
+                                <div id="pickerDropdown"></div>
+                            </div>
+                            <input type="hidden" id="selectedSourceId">
+                            <small class="form-text" id="sourcePreview" style="color:var(--darkest-blue,#00005a); font-weight:600;"></small>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="col-md-1 text-center pb-2" style="font-size:1.4rem; color:var(--gray-300,#cbd5e1);">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+
+                        <!-- Target Table selector -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold" style="font-size:.85rem;">
+                                <i class="fas fa-bullseye text-secondary"></i> Target Table (Output)
+                            </label>
+                            <select id="targetSelect" class="form-control" style="font-size:.875rem;">
+                                <option value="">-- Select target table --</option>
+                                {% for t in target_tables %}
+                                    <option value="{{ t.table_id }}">{{ t.table_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text">Target tables already linked to this job</small>
+                        </div>
+
+                        <!-- Add button -->
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" id="addRelBtn">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Existing Relationships Table ── -->
+                <div id="relTableWrapper">
+                    {% if relationships %}
+                    <table class="rel-table" id="relTable">
+                        <thead>
+                            <tr>
+                                <th>Source Table</th>
+                                <th style="width:40px;"></th>
+                                <th>Target Table</th>
+                                <th style="width:80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="relTbody">
+                            {% for rel in relationships %}
+                            <tr data-rel-id="{{ rel.relationship_id }}" id="rel-row-{{ rel.relationship_id }}">
+                                <td>
+                                    <div style="font-weight:600; color:var(--dark-text,#1e293b);">
+                                        {{ rel.table1.table_name }}
+                                    </div>
+                                    {% if rel.table1.table_category %}
+                                    <span class="cat-badge cat-{% if rel.table1.table_category == 'SOURCE DATA' %}SOURCE{% else %}{{ rel.table1.table_category }}{% endif %}">
+                                        {{ rel.table1.table_category }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="flow-arrow text-center"><i class="fas fa-arrow-right"></i></td>
+                                <td>
+                                    <div style="font-weight:600; color:var(--dark-text,#1e293b);">
+                                        {{ rel.table2.table_name }}
+                                    </div>
+                                    {% if rel.table2.table_category %}
+                                    <span class="cat-badge cat-{% if rel.table2.table_category == 'SOURCE DATA' %}SOURCE{% else %}{{ rel.table2.table_category }}{% endif %}">
+                                        {{ rel.table2.table_category }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger del-rel-btn"
+                                            data-rel-id="{{ rel.relationship_id }}"
+                                            title="Remove this relationship">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="empty-rel" id="emptyRel">
+                        <i class="fas fa-project-diagram" style="font-size:2rem; color:var(--gray-300,#cbd5e1); display:block; margin-bottom:.5rem;"></i>
+                        No source table relationships yet.<br>
+                        <small>Click "Add Source Table" above to get started.</small>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div><!-- /rel-section-body -->
+        </div><!-- /rel-section -->
+
+    </div><!-- /card-body -->
 </div>
 
-<!-- Success/Error Messages -->
-<div id="messageCard" class="card mt-4" style="display: none;">
-    <div class="card-body">
-        <div id="messageContent"></div>
-    </div>
-</div>
+<!-- Toast notification -->
+<div id="relToast"></div>
 {% endblock %}
 
 {% block extra_js %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-<style>
-    /* Styling agar Choices.js lebih menyatu dengan Bootstrap 5 */
-    .choices__inner {
-        background-color: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        min-height: 38px;
-        padding: 4px 10px;
-    }
-    .choices[data-type*="select-multiple"] .choices__button, 
-    .choices[data-type*="text"] .choices__button {
-        border-left: 1px solid rgba(255,255,255,0.3);
-    }
-    .choices__list--multiple .choices__item {
-        background-color: #0d6efd; /* Warna Primary Bootstrap */
-        border: 1px solid #0d6efd;
-    }
-    .is-focused .choices__inner {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    /* Menghilangkan pesan 'No choices to choose from' saat user ingin input manual */
-    .choices__list--dropdown .choices__item--selectable.choices__placeholder {
-        display: none;
-    }
-    /* Memastikan tag table baru berwarna berbeda (opsional) */
-    .choices__list--multiple .choices__item {
-        background-color: #198754; /* Warna hijau success untuk membedakan */
-        border: 1px solid #198754;
-    }
-
-    .choices {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-
-    .choices__inner {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* Input field */
-    .choices__input {
-        width: 100% !important;
-    }
-
-    /* Dropdown agar sejajar */
-    .choices__list--dropdown {
-        width: 100%;
-    }
-
-    .card-body {
-    padding-left: 2rem;
-    padding-right: 2rem;
-    }
-
-    .choices__list--multiple .choices__item {
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    }
-
-    .card,
-    .card-body,
-    .form-select,
-    .form-control,
-    .col-12,
-    .col-lg-10,
-    .col-xl-9 {
-        overflow: visible !important;
-    }
-
-    *, *::before, *::after {
-    box-sizing: border-box;
-    }
-
-    /* FIX Choices overflow di Bootstrap row */
-    .row .choices {
-        width: 100% !important;
-        max-width: calc(100% - 1px) !important;
-    }
-
-    .row .choices__inner {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    .row {
-    margin-left: 0;
-    margin-right: 0;
-    }
-
-    .upload-job-page .alert {
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    
-   
-
-</style>
-
-
 <script>
-document.getElementById('editJobForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    
-    // Show loading state
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    submitBtn.disabled = true;
-    
-    // Hide previous messages
-    document.getElementById('messageCard').style.display = 'none';
-    
-    fetch('{% url "edit_job" job.job_id %}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Reset button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Redirect after a delay
-            setTimeout(() => {
-                window.location.href = '{% url "job_list" %}';
-            }, 1500);
-        } else {
-            showMessage(data.error, 'error');
-        }
-    })
-    .catch(error => {
-        // Reset button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        
-        console.error('Error:', error);
-        showMessage('An error occurred while updating the job. Please try again.', 'error');
-    });
-});
+// ════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════
+const ALL_TABLES = {{ all_tables_json|safe }};
+const JOB_ID     = {{ job.job_id }};
+const CSRF_TOKEN = '{{ csrf_token }}';
 
-function showMessage(message, type) {
-    const messageCard = document.getElementById('messageCard');
-    const messageContent = document.getElementById('messageContent');
-    
-    let alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    let icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-    
-    messageContent.innerHTML = `
-        <div class="alert ${alertClass}">
-            <h5><i class="${icon}"></i> ${type === 'success' ? 'Success' : 'Error'}</h5>
-            <p>${message}</p>
-        </div>
-    `;
-    
-    messageCard.style.display = 'block';
-    messageCard.scrollIntoView({ behavior: 'smooth' });
-}
+// ════════════════════════════════════════════════════════
+//  SAVE JOB INFO FORM
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
 
-$(document).ready(function () {
-    /* ===============================
-       Init Choices.js
-    =============================== */
-    const element = document.getElementById('developer');
-    const developerChoices = new Choices(element, {
-        removeItemButton: true,
-        placeholder: true,
-        placeholderValue: '-- Select Developers --',
-        searchPlaceholderValue: 'Cari nama developer...',
-        noResultsText: 'Developer tidak ditemukan',
-        itemSelectText: 'Klik untuk memilih',
-    });
-    
-    /* ===============================
-       Set Pre-selected Developers
-    =============================== */
-    // Get current developers from the job
-    const selectedDevelopers = [
-        {% for dev in job.developers.all %}
-            '{{ dev.developer_id }}'{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-    
-    // Set the selected values
-    if (selectedDevelopers.length > 0) {
-        developerChoices.setChoiceByValue(selectedDevelopers);
+    // ════════════════════════════════════════════════════════
+    //  SAVE JOB INFO FORM
+    // ════════════════════════════════════════════════════════
+    const editForm = document.getElementById('editJobForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const btn = document.getElementById('saveJobBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            btn.disabled = true;
+
+            fetch('{% url "edit_job" job.job_id %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+                if (data.success) {
+                    showToast('✓ ' + data.message, 'success');
+                } else {
+                    showToast('✗ ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(() => {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+                showToast('Network error. Please try again.', 'error');
+            });
+        });
     }
-});
+
+    // ════════════════════════════════════════════════════════
+    //  CHOICES.JS (Developer selector)
+    // ════════════════════════════════════════════════════════
+    const devEl = document.getElementById('developer');
+    if (devEl) {
+        const developerChoices = new Choices(devEl, {
+            removeItemButton: true,
+            placeholder: true,
+            placeholderValue: '-- Select Developers --',
+            searchPlaceholderValue: 'Cari nama developer…',
+            noResultsText: 'Developer tidak ditemukan',
+            itemSelectText: 'Klik untuk memilih',
+        });
+        const selectedDevelopers = [
+            {% for dev in job.developers.all %}'{{ dev.developer_id }}'{% if not forloop.last %},{% endif %}{% endfor %}
+        ];
+        if (selectedDevelopers.length) {
+            developerChoices.setChoiceByValue(selectedDevelopers);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  ADD PANEL TOGGLE
+    // ════════════════════════════════════════════════════════
+    const toggleBtn  = document.getElementById('toggleAddPanel');
+    const addPanel   = document.getElementById('addPanel');
+    let panelOpen    = false;
+
+    if (toggleBtn && addPanel) {
+        toggleBtn.addEventListener('click', () => {
+            panelOpen = !panelOpen;
+            addPanel.style.display = panelOpen ? 'block' : 'none';
+            toggleBtn.innerHTML = panelOpen
+                ? '<i class="fas fa-times"></i> Close'
+                : '<i class="fas fa-plus"></i> Add Source Table';
+        });
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  SOURCE TABLE PICKER (AUTOCOMPLETE)
+    // ════════════════════════════════════════════════════════
+    const sourceSearch   = document.getElementById('sourceSearch');
+    const pickerDropdown = document.getElementById('pickerDropdown');
+    const selectedSrcId  = document.getElementById('selectedSourceId');
+    const sourcePreview  = document.getElementById('sourcePreview');
+
+    if (sourceSearch) {
+        sourceSearch.addEventListener('input', () => {
+            clearTimeout(pickerTimeout);
+            selectedSrcId.value = '';
+            sourcePreview.textContent = '';
+            const q = sourceSearch.value.trim();
+            if (!q) { closePicker(); return; }
+            pickerTimeout = setTimeout(() => {
+                const filtered = ALL_TABLES
+                    .filter(t => t.table_name.toLowerCase().includes(q.toLowerCase()))
+                    .slice(0, 40);
+                buildPicker(filtered, q);
+            }, 120);
+        });
+
+        sourceSearch.addEventListener('focus', () => {
+            const q = sourceSearch.value.trim();
+            if (q.length >= 1) {
+                const filtered = ALL_TABLES
+                    .filter(t => t.table_name.toLowerCase().includes(q.toLowerCase()))
+                    .slice(0, 40);
+                buildPicker(filtered, q);
+            }
+        });
+
+        sourceSearch.addEventListener('blur', () => setTimeout(closePicker, 150));
+
+        sourceSearch.addEventListener('keydown', e => {
+            if (!pickerItems.length) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                pickerActiveIdx = Math.min(pickerActiveIdx + 1, pickerItems.length - 1);
+                updatePickerActive();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                pickerActiveIdx = Math.max(pickerActiveIdx - 1, 0);
+                updatePickerActive();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (pickerActiveIdx >= 0 && pickerItems[pickerActiveIdx]) {
+                    selectSource(pickerItems[pickerActiveIdx].data);
+                }
+            } else if (e.key === 'Escape') { closePicker(); }
+        });
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  ADD RELATIONSHIP
+    // ════════════════════════════════════════════════════════
+    const addRelBtn = document.getElementById('addRelBtn');
+    if (addRelBtn) {
+        addRelBtn.addEventListener('click', async () => {
+            const srcId = parseInt(selectedSrcId.value);
+            const tgtId = parseInt(document.getElementById('targetSelect').value);
+
+            if (!srcId) { showToast('Please select a source table.', 'warn'); return; }
+            if (!tgtId) { showToast('Please select a target table.', 'warn'); return; }
+
+            addRelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            addRelBtn.disabled = true;
+
+            try {
+                const resp = await fetch(`/api/jobs/${JOB_ID}/relationships/add/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({ source_table_id: srcId, target_table_id: tgtId }),
+                });
+                const data = await resp.json();
+
+                if (data.warning) {
+                    showToast('⚠ Relationship already exists.', 'warn');
+                } else if (data.success) {
+                    appendRelRow(data);
+                    showToast('✓ Relationship added.', 'success');
+                    // Reset picker
+                    sourceSearch.value = '';
+                    selectedSrcId.value = '';
+                    sourcePreview.textContent = '';
+                } else {
+                    showToast('✗ ' + (data.error || 'Error adding relationship'), 'error');
+                }
+            } catch {
+                showToast('Network error. Please try again.', 'error');
+            } finally {
+                addRelBtn.innerHTML = '<i class="fas fa-plus"></i> Add';
+                addRelBtn.disabled = false;
+            }
+        });
+    }
+
+    // Attach delete handler to existing rows
+    document.querySelectorAll('.del-rel-btn').forEach(attachDeleteHandler);
+
+    // ════════════════════════════════════════════════════════
+    //  PICKER LOGIC
+    // ════════════════════════════════════════════════════════
+    let pickerTimeout   = null;
+    let pickerActiveIdx = -1;
+    let pickerItems     = [];
+
+    function highlight(text, q) {
+        if (!q) return text;
+        const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return text.replace(new RegExp(esc, 'gi'), m => `<mark>${m}</mark>`);
+    }
+
+    function catBadge(cat) {
+        const cls = cat === 'SOURCE DATA' ? 'cat-SOURCE' : 'cat-' + (cat || 'OTHER');
+        return `<span class="cat-badge ${cls}">${cat || 'OTHER'}</span>`;
+    }
+
+    function buildPicker(tables, q) {
+        pickerDropdown.innerHTML = '';
+        pickerItems = [];
+        pickerActiveIdx = -1;
+
+        if (!tables.length) {
+            pickerDropdown.innerHTML = '<div class="picker-item" style="color:var(--light-text);">No tables found</div>';
+            pickerDropdown.style.display = 'block';
+            return;
+        }
+
+        tables.forEach(t => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `
+                ${catBadge(t.table_category)}
+                <span class="pi-name" title="${t.table_name}">${highlight(t.table_name, q)}</span>
+            `;
+            item.addEventListener('mousedown', e => {
+                e.preventDefault();
+                selectSource(t);
+            });
+            pickerDropdown.appendChild(item);
+            pickerItems.push({ el: item, data: t });
+        });
+
+        pickerDropdown.style.display = 'block';
+    }
+
+    function closePicker() {
+        pickerDropdown.style.display = 'none';
+        pickerDropdown.innerHTML = '';
+        pickerItems = [];
+        pickerActiveIdx = -1;
+    }
+
+    function selectSource(t) {
+        selectedSrcId.value = t.table_id;
+        sourceSearch.value  = t.table_name;
+        sourcePreview.textContent = '✓ ' + t.table_name;
+        closePicker();
+    }
+
+    function updatePickerActive() {
+        pickerItems.forEach((item, i) => {
+            item.el.classList.toggle('selected', i === pickerActiveIdx);
+            if (i === pickerActiveIdx) item.el.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  APPEND ROW TO TABLE
+    // ════════════════════════════════════════════════════════
+    function appendRelRow(data) {
+        // Hide empty state if present
+        const emptyEl = document.getElementById('emptyRel');
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        // Create table if it doesn't exist yet
+        let tbody = document.getElementById('relTbody');
+        if (!tbody) {
+            const wrapper = document.getElementById('relTableWrapper');
+            wrapper.innerHTML = `
+                <table class="rel-table" id="relTable">
+                    <thead>
+                        <tr>
+                            <th>Source Table</th>
+                            <th style="width:40px;"></th>
+                            <th>Target Table</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="relTbody"></tbody>
+                </table>
+            `;
+            tbody = document.getElementById('relTbody');
+        }
+
+        const src = data.source_table;
+        const tgt = data.target_table;
+        const srcCls = src.category === 'SOURCE DATA' ? 'cat-SOURCE' : 'cat-' + (src.category || 'OTHER');
+        const tgtCls = tgt.category === 'SOURCE DATA' ? 'cat-SOURCE' : 'cat-' + (tgt.category || 'OTHER');
+
+        const tr = document.createElement('tr');
+        tr.id = `rel-row-${data.relationship_id}`;
+        tr.className = 'rel-row-new';
+        tr.dataset.relId = data.relationship_id;
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:600; color:var(--dark-text,#1e293b);">${src.name}</div>
+                <span class="cat-badge ${srcCls}">${src.category}</span>
+            </td>
+            <td class="flow-arrow text-center"><i class="fas fa-arrow-right"></i></td>
+            <td>
+                <div style="font-weight:600; color:var(--dark-text,#1e293b);">${tgt.name}</div>
+                <span class="cat-badge ${tgtCls}">${tgt.category}</span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-danger del-rel-btn" data-rel-id="${data.relationship_id}" title="Remove">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        updateRelCount(1);
+        attachDeleteHandler(tr.querySelector('.del-rel-btn'));
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  DELETE RELATIONSHIP
+    // ════════════════════════════════════════════════════════
+    function attachDeleteHandler(btn) {
+        btn.addEventListener('click', async function() {
+            const relId = this.dataset.relId;
+            if (!confirm('Remove this relationship? This cannot be undone.')) return;
+
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+
+            try {
+                const resp = await fetch(`/api/relationships/${relId}/delete/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    const row = document.getElementById(`rel-row-${relId}`);
+                    if (row) row.remove();
+                    updateRelCount(-1);
+                    showToast('✓ Relationship removed.', 'success');
+                    checkEmpty();
+                } else {
+                    showToast('✗ ' + (data.error || 'Error'), 'error');
+                    this.innerHTML = '<i class="fas fa-trash"></i>';
+                    this.disabled = false;
+                }
+            } catch {
+                showToast('Network error.', 'error');
+                this.innerHTML = '<i class="fas fa-trash"></i>';
+                this.disabled = false;
+            }
+        });
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  HELPERS
+    // ════════════════════════════════════════════════════════
+    function updateRelCount(delta) {
+        const badge = document.getElementById('relCount');
+        if (badge) badge.textContent = parseInt(badge.textContent || 0) + delta;
+    }
+
+    function checkEmpty() {
+        const tbody = document.getElementById('relTbody');
+        if (tbody && tbody.children.length === 0) {
+            const wrapper = document.getElementById('relTableWrapper');
+            wrapper.innerHTML = `
+                <div class="empty-rel" id="emptyRel">
+                    <i class="fas fa-project-diagram" style="font-size:2rem; color:var(--gray-300,#cbd5e1); display:block; margin-bottom:.5rem;"></i>
+                    No source table relationships yet.<br>
+                    <small>Click "Add Source Table" above to get started.</small>
+                </div>
+            `;
+        }
+    }
+
+    let toastTimer = null;
+    function showToast(msg, type) {
+        const el = document.getElementById('relToast');
+        el.className = `toast-${type}`;
+        el.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warn' ? 'exclamation-triangle' : 'times-circle'}"></i> ${msg}`;
+        el.style.display = 'flex';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
+    }
+
+}); // End DOMContentLoaded
 </script>
 {% endblock %}

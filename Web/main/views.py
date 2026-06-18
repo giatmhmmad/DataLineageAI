@@ -26,7 +26,7 @@ from .bot_eda import JobUploadLogs, JobUploadSessions, StagingDetectedTables
 from .forms import DeveloperForm
 from collections import defaultdict
 from .utils import update_job_status, get_or_create_table_ids 
-from django.db.models import OuterRef, Subquery, F, Q , Max
+from django.db.models import OuterRef, Subquery, F, Q, Max, Count
 
 
 
@@ -63,65 +63,254 @@ def table_list(request):
     """
     # 1. Ambil kata kunci pencarian dari URL
     search_query = request.GET.get('q', '')
+    category_query = request.GET.get('category', '')
 
     # 2. Ambil semua data awal
     tables = get_all_tables(request)
     
-    # 3. Lakukan filter jika ada kata kunci pencarian
-    if search_query:
-        # Cek apakah 'tables' adalah QuerySet (biasanya iya)
-        try:
+    # Hitung jumlah untuk tiap kategori sebelum filter diaplikasikan
+    category_counts = {
+        'all': 0,
+        'datamart': 0,
+        'staging': 0,
+        'source_data': 0,
+        'other': 0
+    }
+    
+    try:
+        # Jika tables adalah QuerySet
+        category_counts['all'] = tables.count()
+        category_counts['datamart'] = tables.filter(table_category='DATAMART').count()
+        category_counts['staging'] = tables.filter(table_category='STAGING').count()
+        category_counts['source_data'] = tables.filter(table_category='SOURCE DATA').count()
+        category_counts['other'] = tables.filter(table_category='OTHER').count()
+    except AttributeError:
+        # Jika tables adalah list biasa
+        category_counts['all'] = len(tables)
+        category_counts['datamart'] = sum(1 for t in tables if getattr(t, 'table_category', '') == 'DATAMART')
+        category_counts['staging'] = sum(1 for t in tables if getattr(t, 'table_category', '') == 'STAGING')
+        category_counts['source_data'] = sum(1 for t in tables if getattr(t, 'table_category', '') == 'SOURCE DATA')
+        category_counts['other'] = sum(1 for t in tables if getattr(t, 'table_category', '') == 'OTHER')
+
+    # 3. Lakukan filter jika ada kata kunci pencarian atau kategori
+    try:
+        if search_query:
             tables = tables.filter(
                 Q(table_name__icontains=search_query) |  # Cari di Nama Tabel
                 Q(table_id__icontains=search_query)      # Cari di ID Tabel
             )
-        except AttributeError:
-            # JAGA-JAGA: Jika get_all_tables mengembalikan "List" Python biasa (bukan QuerySet)
-            # Kita gunakan filter manual Python
+        if category_query:
+            tables = tables.filter(table_category=category_query)
+        current_count = tables.count()
+    except AttributeError:
+        # JAGA-JAGA: Jika get_all_tables mengembalikan "List" Python biasa (bukan QuerySet)
+        # Kita gunakan filter manual Python
+        if search_query:
             tables = [
                 t for t in tables 
                 if search_query.lower() in t.table_name.lower() 
                 or search_query.lower() in str(t.table_id).lower()
             ]
+        if category_query:
+            tables = [
+                t for t in tables
+                if getattr(t, 'table_category', '') == category_query
+            ]
+        current_count = len(tables)
 
     context = {
         'tables': tables,
         'search_query': search_query, # Kirim balik ke template agar input text tidak hilang
+        'category_query': category_query, # Kirim category agar UI tahu mana yang aktif
+        'category_counts': category_counts,
+        'current_count': current_count,
     }
     
     return render(request, 'table_list.html', context)
 
 def data_lineage(request):
     """
-    Render the data lineage page with tables and relationships data.
+    Render the data lineage page.
+    Only passes minimal metadata – full graph data is fetched lazily via AJAX.
     """
-    tables = Table.objects.all()
-    relationships = Relationship.objects.all().select_related('table1', 'table2')
-    
-    # Prepare data for JavaScript visualization
-    tables_data = []
-    for table in tables:
-        tables_data.append({
-            'id': table.table_id,
-            'name': table.table_name,
-        })
-    
-    relationships_data = []
-    for rel in relationships:
-        relationships_data.append({
-            'source': rel.table1.table_id,
-            'target': rel.table2.table_id,
-            'job_name': rel.job_name,
-        })
-    
+    tables = Table.objects.annotate(
+        incoming_count=Count('table2', distinct=True),
+        outgoing_count=Count('table1', distinct=True),
+    ).order_by('table_name')
+
+    relationships_count = Relationship.objects.count()
+
+    # Minimal table list for autocomplete (id, name, category, connection_count)
+    tables_data = [
+        {
+            'id': t.table_id,
+            'name': t.table_name,
+            'category': t.table_category or 'OTHER',
+            'connection_count': t.incoming_count + t.outgoing_count,
+        }
+        for t in tables
+    ]
+
+    # Top-5 most connected tables for "popular" suggestions
+    popular = sorted(tables_data, key=lambda x: x['connection_count'], reverse=True)[:5]
+
     context = {
         'tables': tables,
-        'relationships': relationships,
+        'relationships_count': relationships_count,
         'tables_json': json.dumps(tables_data),
-        'relationships_json': json.dumps(relationships_data),
+        'popular_json': json.dumps(popular),
     }
-    
     return render(request, 'data_lineage.html', context)
+
+
+@require_GET
+def api_search_tables(request):
+    """
+    AJAX: Search tables by name with optional category filter.
+    Returns paginated JSON list for autocomplete dropdown.
+    """
+    query    = request.GET.get('q', '').strip()
+    category = request.GET.get('category', '').strip()
+    limit    = min(int(request.GET.get('limit', 30)), 100)
+
+    tables = Table.objects.annotate(
+        incoming_count=Count('table2', distinct=True),
+        outgoing_count=Count('table1', distinct=True),
+    )
+
+    if query:
+        tables = tables.filter(table_name__icontains=query)
+    if category and category != 'ALL':
+        tables = tables.filter(table_category=category)
+
+    tables = tables.order_by('-incoming_count', '-outgoing_count', 'table_name')[:limit]
+
+    data = [
+        {
+            'id': t.table_id,
+            'name': t.table_name,
+            'category': t.table_category or 'OTHER',
+            'connection_count': t.incoming_count + t.outgoing_count,
+            'incoming_count': t.incoming_count,
+            'outgoing_count': t.outgoing_count,
+        }
+        for t in tables
+    ]
+    return JsonResponse({'tables': data})
+
+
+@require_GET
+def api_get_lineage(request, table_id):
+    """
+    AJAX: Return lineage nodes + edges for a specific focus table.
+    Traverses upstream (sources) and downstream (targets) up to depth_limit levels.
+    """
+    try:
+        focus_table = Table.objects.get(table_id=table_id)
+    except Table.DoesNotExist:
+        return JsonResponse({'error': 'Table not found'}, status=404)
+
+    depth_limit_raw = request.GET.get('depth', '')
+    depth_limit = int(depth_limit_raw) if depth_limit_raw.isdigit() else None
+
+    # Load all relationships into memory for traversal (avoids N+1 queries)
+    all_rels = list(
+        Relationship.objects.select_related('table1', 'table2')
+        .values('table1_id', 'table2_id', 'job_name')
+    )
+
+    # Build adjacency maps
+    downstream_map = {}  # source_id -> [(target_id, job_name)]
+    upstream_map   = {}  # target_id -> [(source_id, job_name)]
+    for r in all_rels:
+        downstream_map.setdefault(r['table1_id'], []).append((r['table2_id'], r['job_name']))
+        upstream_map.setdefault(r['table2_id'], []).append((r['table1_id'], r['job_name']))
+
+    # Iterative BFS traversal – safe for large/cyclic graphs
+    included_nodes = {}  # table_id -> depth (0=focus, negative=upstream, positive=downstream)
+    included_edges = []  # list of {source, target, job_name, direction}
+
+    included_nodes[table_id] = 0
+
+    from collections import deque
+
+    # ── Upstream BFS ──────────────────────────────────────────────
+    visited_up = {table_id}
+    queue = deque([(table_id, 0)])
+    while queue:
+        tid, depth = queue.popleft()
+        for (src_id, job) in upstream_map.get(tid, []):
+            new_depth = depth - 1
+            if depth_limit is not None and abs(new_depth) > depth_limit:
+                continue
+            included_edges.append({'source': src_id, 'target': tid, 'job_name': job, 'direction': 'upstream'})
+            if src_id not in visited_up:
+                visited_up.add(src_id)
+                if src_id not in included_nodes:
+                    included_nodes[src_id] = new_depth
+                queue.append((src_id, new_depth))
+
+    # ── Downstream BFS ────────────────────────────────────────────
+    visited_down = {table_id}
+    queue = deque([(table_id, 0)])
+    while queue:
+        tid, depth = queue.popleft()
+        for (tgt_id, job) in downstream_map.get(tid, []):
+            new_depth = depth + 1
+            if depth_limit is not None and new_depth > depth_limit:
+                continue
+            included_edges.append({'source': tid, 'target': tgt_id, 'job_name': job, 'direction': 'downstream'})
+            if tgt_id not in visited_down:
+                visited_down.add(tgt_id)
+                if tgt_id not in included_nodes:
+                    included_nodes[tgt_id] = new_depth
+                queue.append((tgt_id, new_depth))
+
+    # Deduplicate edges (keep unique source-target-job combos)
+    seen_edges = set()
+    unique_edges = []
+    for e in included_edges:
+        key = (e['source'], e['target'], e['job_name'])
+        if key not in seen_edges:
+            seen_edges.add(key)
+            unique_edges.append(e)
+
+    # Fetch table metadata for included nodes
+    node_ids = list(included_nodes.keys())
+    node_qs = Table.objects.filter(table_id__in=node_ids).annotate(
+        incoming_count=Count('table2', distinct=True),
+        outgoing_count=Count('table1', distinct=True),
+    )
+
+    # Collect upstream/downstream job names per node for rich tooltip
+    upstream_jobs_map   = {}   # table_id -> {source_id: [job_names]}
+    downstream_jobs_map = {}   # table_id -> {target_id: [job_names]}
+    for e in unique_edges:
+        downstream_jobs_map.setdefault(e['source'], {}).setdefault(e['target'], []).append(e['job_name'])
+        upstream_jobs_map.setdefault(e['target'], {}).setdefault(e['source'], []).append(e['job_name'])
+
+    nodes = []
+    for t in node_qs:
+        depth = included_nodes[t.table_id]
+        nodes.append({
+            'id': t.table_id,
+            'name': t.table_name,
+            'category': t.table_category or 'OTHER',
+            'connection_count': t.incoming_count + t.outgoing_count,
+            'incoming_count': t.incoming_count,
+            'outgoing_count': t.outgoing_count,
+            'depth': depth,
+            'is_focus': t.table_id == table_id,
+        })
+
+    return JsonResponse({
+        'focus_id': table_id,
+        'focus_name': focus_table.table_name,
+        'nodes': nodes,
+        'edges': unique_edges,
+        'upstream_count': sum(1 for d in included_nodes.values() if d < 0),
+        'downstream_count': sum(1 for d in included_nodes.values() if d > 0),
+    })
 
 def show_template_page(request):
     """
@@ -1030,7 +1219,6 @@ def edit_job(request, job_id):
     developers = JobDeveloper.objects.all().order_by('developer_name')
     job = get_object_or_404(JobDetail, job_id=job_id)
 
-    
     if request.method == 'POST':
         try:
             # Get form data
@@ -1053,13 +1241,10 @@ def edit_job(request, job_id):
             job.save()
 
             if new_developers:
-                # Convert string IDs to integers
                 developer_ids = [int(dev_id) for dev_id in new_developers]
                 job.developers.set(developer_ids)
             else:
-                # Clear all developers if none selected
                 job.developers.clear()
-            
             
             return JsonResponse({
                 'success': True, 
@@ -1072,11 +1257,90 @@ def edit_job(request, job_id):
             return JsonResponse({'error': f'Error updating job: {str(e)}'}, status=500)
     
     # GET request - render the edit form
+    relationships = (
+        Relationship.objects
+        .filter(job=job)
+        .select_related('table1', 'table2')
+        .order_by('table2__table_name', 'table1__table_name')
+    )
+    # All tables for the "add source" picker (exclude target tables of this job)
+    all_tables = list(
+        Table.objects
+        .order_by('table_name')
+        .values('table_id', 'table_name', 'table_category')
+    )
+    target_tables = list(set(r.table2 for r in relationships if r.table2))
+
     context = {
-        'job': job, 
-        'developers': developers
+        'job': job,
+        'developers': developers,
+        'relationships': relationships,
+        'target_tables': target_tables,
+        'all_tables_json': json.dumps(all_tables),
     }
     return render(request, 'edit_job.html', context)
+
+
+@csrf_exempt
+def api_add_relationship(request, job_id):
+    """
+    AJAX POST: Add a new source table → target table relationship for a job.
+    Expected JSON body: {source_table_id, target_table_id}
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    job = get_object_or_404(JobDetail, job_id=job_id)
+    try:
+        data = json.loads(request.body)
+        src_id = int(data.get('source_table_id', 0))
+        tgt_id = int(data.get('target_table_id', 0))
+    except (ValueError, KeyError):
+        return JsonResponse({'error': 'Invalid request body'}, status=400)
+
+    if not src_id or not tgt_id:
+        return JsonResponse({'error': 'source_table_id and target_table_id are required'}, status=400)
+    if src_id == tgt_id:
+        return JsonResponse({'error': 'Source and target table cannot be the same'}, status=400)
+
+    try:
+        source = Table.objects.get(table_id=src_id)
+        target = Table.objects.get(table_id=tgt_id)
+    except Table.DoesNotExist:
+        return JsonResponse({'error': 'Table not found'}, status=404)
+
+    rel, created = Relationship.objects.get_or_create(
+        table1=source,
+        table2=target,
+        job_name=job.job_name,
+        defaults={'job': job},
+    )
+    if not created:
+        # Ensure job FK is set if it was missing
+        if not rel.job:
+            rel.job = job
+            rel.save()
+        return JsonResponse({'warning': 'Relationship already exists', 'relationship_id': rel.relationship_id})
+
+    return JsonResponse({
+        'success': True,
+        'relationship_id': rel.relationship_id,
+        'source_table': {'id': source.table_id, 'name': source.table_name, 'category': source.table_category or 'OTHER'},
+        'target_table': {'id': target.table_id, 'name': target.table_name, 'category': target.table_category or 'OTHER'},
+    })
+
+
+@csrf_exempt
+def api_delete_relationship(request, relationship_id):
+    """
+    AJAX DELETE/POST: Remove a specific relationship row.
+    """
+    if request.method not in ('POST', 'DELETE'):
+        return JsonResponse({'error': 'POST or DELETE required'}, status=405)
+
+    rel = get_object_or_404(Relationship, relationship_id=relationship_id)
+    rel.delete()
+    return JsonResponse({'success': True, 'deleted_id': relationship_id})
 
 def delete_job(request, job_id):
     """

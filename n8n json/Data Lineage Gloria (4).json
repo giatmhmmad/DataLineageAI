@@ -1,0 +1,4187 @@
+{
+  "name": "Data Lineage Gloria",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        -2256,
+        528
+      ],
+      "id": "430564dc-3ea9-4f1c-ab18-8904acfaa974",
+      "name": "Compression",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "xml",
+        "binaryPropertyName": "file_1",
+        "destinationKey": "={{$('Compression').item.binary.file_1.fileExtension }}",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        960
+      ],
+      "id": "f73e9235-8291-4653-9873-ab2930528ad3",
+      "name": "Extract from File1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "xml",
+        "binaryPropertyName": "file_2",
+        "destinationKey": "={{$('Compression').item.binary.file_2.fileExtension }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        1152
+      ],
+      "id": "42c427e1-6f11-48a8-b87d-d3c8d89a2d34",
+      "name": "Extract from File3",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -1968,
+        960
+      ],
+      "id": "f6ec6b6b-77f3-419a-90dd-ac45b50fd34d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "xml",
+        "binaryPropertyName": "file_0",
+        "destinationKey": "={{$('Compression').item.binary.file_0.fileExtension }}",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        784
+      ],
+      "id": "65feffc2-db53-4051-ac1f-cb6cd6aa6ac9",
+      "name": "Extract from File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c8587bfb-2137-495d-b0a6-3c6f8f7b5eba",
+              "name": "job_name",
+              "value": "={{ $json['xmi:XMI']['TalendProperties:Property'].label }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1456,
+        1728
+      ],
+      "id": "2708e92e-8c76-4c6f-bf48-47da33558f0d",
+      "name": "Extract Job Name From Properties File",
+      "notesInFlow": false,
+      "notes": "Extract Job Name From Properties File"
+    },
+    {
+      "parameters": {
+        "content": "## Unzip file input\nExtract item, properties, and item files from zip folder",
+        "height": 1080,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2336,
+        240
+      ],
+      "id": "3ca684b1-3be5-4cec-a372-44323873773d",
+      "name": "Sticky Note",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## Replace Context Parameter in SQL Query\n",
+        "height": 260,
+        "width": 1500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        48
+      ],
+      "id": "06053176-f49c-4476-9fae-1dde87b3aba2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "dataPropertyName": "={{ $json.keys().filter(file_name => file_name == \"item\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -1888,
+        528
+      ],
+      "id": "bc0f0a8f-0382-4db8-af56-c81a1d342810",
+      "name": "FIlter Item File"
+    },
+    {
+      "parameters": {
+        "dataPropertyName": "={{ $json.keys().filter(file_name => file_name == \"properties\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -1888,
+        752
+      ],
+      "id": "4de311cc-240d-4e61-be5e-14f3972154ab",
+      "name": "Filter Properties File"
+    },
+    {
+      "parameters": {
+        "dataPropertyName": "={{ $json.keys().filter(file_name => file_name == \"screenshot\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -1888,
+        288
+      ],
+      "id": "13dcb024-df5e-4b91-a367-f54c6067628c",
+      "name": "Filter Screenshot File"
+    },
+    {
+      "parameters": {
+        "jsCode": "let item = $input.first()?.json ?? {};\nlet processType = item['talendfile:ProcessType'];\n\nif (!processType?.context?.[0]?.contextParameter) {\n  return [{ contextParameter: {} }];\n}\n\nlet contextParams = processType.context[0].contextParameter;\n\nif (!Array.isArray(contextParams)) {\n  contextParams = [contextParams];\n}\n\nlet result = contextParams.reduce((acc, curr) => {\n  if (curr?.name) {\n    acc[curr.name] = curr.value ?? null;\n  }\n  return acc;\n}, {});\n\nreturn [{ contextParameter: result }];\n\n// let item = $('FIlter Item File').first().json;\n\n// let contextParams = item['talendfile:ProcessType'].context[0].contextParameter;\n\n// let result = {};\n// for (let i = 0; i < contextParams.length; i++) {\n//   result[contextParams[i].name] = contextParams[i].value;\n// }\n// return [{\"contextParameter\" : result}];\n\n// // return arr_contextvar;\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        128
+      ],
+      "id": "cd431eb8-152a-4d4b-8489-9b3001762c28",
+      "name": "Replace Context Variable to Actual Value",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let node = $('FIlter Item File').first().json['talendfile:ProcessType'].node\nlet arr_node = [] ;\n\nfor ( let i = 0 ; i < node.length ; i++){\n  let name = node[i].componentName;\n  let elementParameter_arr = node[i].elementParameter;\n\n  let temp_arr = [];\n  \n  for ( let j = 0 ;j < elementParameter_arr.length ; j++){\n    let field = elementParameter_arr[j].field;\n    let name_element = elementParameter_arr[j].name;\n    let value =  elementParameter_arr[j].value;\n\n    temp_arr.push({\n      \"field\": field,\n      \"name\": name_element,\n      \"value\" : value\n    });\n  }\n\n  arr_node.push({\n    \"name\" : name,\n    \"value\" : temp_arr\n  })\n\n}\n\nreturn {\"node\" : node};\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        448
+      ],
+      "id": "5e6c48a4-40b1-4f5e-a37a-88dbf77a96e6",
+      "name": "Get Node Value",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.all().map(i => i.json);\nconst nodes = rawInput.flatMap(item => item.node || []);\nconst results = [];\n\nfor (const node of nodes) {\n  const componentName = node.componentName;\n\n  const elementParams = node.elementParameter || [];\n  const uniqueNameParam = elementParams.find(p => p.name === \"UNIQUE_NAME\");\n  const checkParam = elementParams.find(p => p.field == \"CHECK\" && p.name == \"ACTIVATE\" && p.value == \"false\")\n  \n  const queryParam = elementParams.find(p => p.name === \"QUERY\" && p.field === \"MEMO_SQL\");\n\n  if (!queryParam || !queryParam.value || queryParam.value === \"\\\"\\\"\") continue;\n\n  const uniqueName = uniqueNameParam?.value?.replace(/^\"|\"$/g, '') || null;\n\n  const memoSQL = queryParam.value\n    .replace(/^\"|\"$/g, '')                  // Hapus kutip luar\n    .replace(/\\\\\"/g, '\"')                   // Unescape\n    .replace(/\\\\r\\\\n|\\\\n|\\\\r/g, '\\n')       // Newline asli\n    .replace(/\\/\\*[\\s\\S]*?\\*\\//g, '')       // Komentar multi-baris\n    .split('\\n')\n    .filter(line => !line.trim().startsWith('--')) // Komentar satu baris\n    .join(' ')\n    .replace(/\"\\s*\\+\\s*/g, '')              // Hapus bagian seperti '\"+ \n    .replace(/\\s*\\+\\s*\"/g, '')              // Hapus bagian seperti + \"'\n    .replace(/\\+/g, '')                     // Hapus +\n    .replace(/\"/g, '')                      // Hapus quote sisa\n    .replace(/context\\.(\\w+)/g, '{{$1}}')   // Ubah context.var → {{var}}\n    .replace(/\\s+/g, ' ')                   // Normalisasi spasi\n    .trim();\n\n  const metadata = node.metadata || [];\n  const connectors = (Array.isArray(metadata) ? metadata : [metadata])\n    .map(m => m.name)\n    .filter(Boolean);\n\n  results.push({\n    componentName,\n    uniqueName,\n    memoSQL,\n    connectors,\n    checkParam\n  });\n}\n\nreturn [{\"node \" : results}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        448
+      ],
+      "id": "265a1ae7-de95-45e8-a1c7-322459e8e05c",
+      "name": "Filter Only Node Include SQL and Cleaning SQL Query",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -448,
+        144
+      ],
+      "id": "3ef62859-9356-47d7-b36c-4944fbe4f00e",
+      "name": "Merge Context and SQL Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// // const contextVars = $input.first().json.contextParameter;\n// // const queries = $input.first().json.node.;\n// // const contextMap = {};\n// // contextMap[contextVars.keys] = contextVars.value.replace(/^\"+|\"+$/g, '');\n// // return $input.all();\n\n// const input = $input.item.json;\n\n// const contextVars = input.contextParameter || {};\n// const nodes = input[\"node \"] || []; // perhatikan: ada spasi setelah \"node \"\n\n// const results = [];\n\n// function replaceVariables(sql, contextVars) {\n//   return sql.replace(/{{(.*?)}}/g, (_, varName) => {\n//     let value = contextVars[varName];\n//     if (!value) return `{{${varName}}}`; // biarkan jika tidak ada\n//     return value.replace(/^\"|\"$/g, '');  // hapus tanda kutip jika ada\n//   });\n// }\n\n// for (const node of nodes) {\n//   const componentName = node.componentName;\n//   const uniqueName = node.uniqueName;\n//   const memoSQLRaw = node.memoSQL || '';\n//   const connectors = node.connectors || [];\n\n//   const resolvedSQL = replaceVariables(memoSQLRaw, contextVars);\n\n//   results.push({\n//     componentName,\n//     uniqueName,\n//     // memoSQL_raw: memoSQLRaw,\n//     memoSQL_resolved: resolvedSQL,\n//     connectors\n//   });\n// }\n\n// return results.map(r => ({ json: r }));\n\n\n\nconst input = $input.item.json;\n\n// contextParameter sudah berupa objek, langsung gunakan.\n// Kita hanya perlu membersihkan nilai-nilainya dari tanda kutip ganda.\nconst contextVars = {};\nif (input.contextParameter) {\n    for (const key in input.contextParameter) {\n        if (Object.prototype.hasOwnProperty.call(input.contextParameter, key)) {\n            let value = input.contextParameter[key];\n            // Pastikan nilai adalah string sebelum mencoba replace\n            if (typeof value === 'string') {\n                contextVars[key] = value.replace(/^\"|\"$/g, '');\n            } else {\n                contextVars[key] = value; // Biarkan tipe data lain apa adanya\n            }\n        }\n    }\n}\n\nconst nodes = input[\"node \"] || []; // perhatikan: ada spasi setelah \"node \"\n\nconst results = [];\n\nfunction replaceVariables(sql, contextVars) {\n  // Regex untuk mencocokkan {{VAR_NAME}}\n  return sql.replace(/{{(.*?)}}/g, (_, varName) => {\n    let value = contextVars[varName];\n    if (value === undefined) {\n      return `{{${varName}}}`; // Biarkan variabel tidak terganti jika tidak ditemukan di contextVars\n    }\n    return value;\n  });\n}\n\nfor (const node of nodes) {\n  const componentName = node.componentName;\n  const uniqueName = node.uniqueName;\n  const memoSQLRaw = node.memoSQL || '';\n  const connectors = node.connectors || [];\n\n  const resolvedSQL = replaceVariables(memoSQLRaw, contextVars);\n\n  results.push({\n    componentName,\n    uniqueName,\n    memoSQL_resolved: resolvedSQL,\n    connectors\n  });\n}\n\nreturn results.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        144
+      ],
+      "id": "cac5c0a0-39b6-4174-82e6-088386e9dd37",
+      "name": "Replace Context Parameter in SQL Query",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0c505202-819c-4f9e-8303-f9af790f591d",
+              "name": "query",
+              "value": "={{ $json.memoSQL_resolved }}",
+              "type": "string"
+            },
+            {
+              "id": "3ba94cb3-bdce-4c2d-a3b0-d2fd05826b52",
+              "name": "query_num",
+              "value": "={{ $itemIndex }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        144
+      ],
+      "id": "5e196a8d-0038-47a8-bc24-1141953aa20f",
+      "name": "Get SQL Only for Inference"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is my SQL query:\n{{ $input.item.json.query}}\n\nPlease extract the schema name and source table names and return the result as a array like this:\n[\"schema_name.table_name1\", \"schema_name.table_name2\"]",
+        "options": {
+          "systemMessage": "You are a specialized SQL parser that extracts ONLY physical source tables stored in a database.\n\nYour task:\nExtract schema-qualified table names that appear in:\n\n* FROM clauses\n* JOIN clauses (INNER, LEFT, RIGHT, FULL, CROSS, etc.)\n\nSTRICT RULES:\n\n1. ONLY return tables that physically exist in the database.\n2. ONLY return names in the format: schema_name.table_name\n3. NEVER return:\n\n   * CTE names defined in WITH clauses\n   * Subquery aliases\n   * Inline views\n   * Temporary tables (#temp, ##temp)\n   * Table variables (@table)\n   * Derived tables\n   * Aliases\n   * Any name that is not a real persisted database table\n4. If a CTE or subquery exists:\n\n   * Ignore the CTE name itself.\n   * Extract ONLY the real physical tables referenced inside it.\n5. If a table is not schema-qualified, assume it is a physical table and return it as-is.\n6. Remove duplicates.\n7. Do NOT guess or fabricate schema names.\n8. Output must be a valid JSON array of strings.\n9. Output must contain ONLY the raw JSON array — no explanation, no markdown, no extra text.\n\nOutput format example:\n[\"schema_name.table1\", \"schema_name.table2\"]\n\nIf no physical tables are found, return:\n[]\n\nReturn ONLY the JSON array."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        368,
+        144
+      ],
+      "id": "136d45d0-d695-46a6-aa8f-bc38bcae39b7",
+      "name": "Data Lineage Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Generate Source Table Name and Mapping Source Table Category\n",
+        "height": 580,
+        "width": 2236
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        16
+      ],
+      "id": "6e4ddab3-173b-4c8e-8ebc-9636348dedb8",
+      "name": "Sticky Note3",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "let connections = $('FIlter Item File').first().json['talendfile:ProcessType'].connection;\nlet arr_connector = [];\n\nfor (let i = 0; i < connections.length; i++) {\n  let name = connections[i].connectorName;\n  let source = connections[i].source;\n  let target = connections[i].target;\n  let elementParameter_arr = connections[i].elementParameter;\n\n  arr_connector.push({\n    name: name,\n    source: source,\n    target: target,\n    elementParameter: elementParameter_arr\n  });\n}\n\n// Output sesuai format n8n\nreturn [{\n  json: {\n    connection: arr_connector\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        720
+      ],
+      "id": "631e4d1c-d642-4155-9c68-579a8f505261",
+      "name": "Get Connector Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const connections = items[0].json.connection || [];\nconst filtered = [];\n\n// Telusuri setiap koneksi\nfor (const conn of connections) {\n  const params = Array.isArray(conn.elementParameter)\n    ? conn.elementParameter\n    : [conn.elementParameter]; // tangani jika bukan array\n\n  // Cek apakah ada parameter yang cocok\n  const match = params.some(p =>\n    p.field === \"CHECK\" &&\n    p.name === \"ACTIVATE\" &&\n    p.show === \"false\" &&\n    p.value === \"false\"\n  );\n\n  if (match) {\n    filtered.push(conn);\n  }\n}\n\n// Kembalikan dalam format n8n\nreturn [{\n  json: {\n    connection: filtered\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        640
+      ],
+      "id": "26cf6df2-be31-42dd-b8ee-acfa73535e97",
+      "name": "Get Inactive Connector"
+    },
+    {
+      "parameters": {
+        "jsCode": "const connections = items[0].json.connection || [];\nconst filtered = [];\n\n// Telusuri setiap koneksi\nfor (const conn of connections) {\n  const params = Array.isArray(conn.elementParameter)\n    ? conn.elementParameter\n    : [conn.elementParameter]; // tangani jika bukan array\n\n  // Cek apakah ada parameter yang cocok\n  const match = params.some(p =>\n    p.field === \"CHECK\" &&\n    p.name === \"ACTIVATE\" &&\n    p.show === \"false\" &&\n    p.value === \"false\"\n  );\n\n  if (!match) {\n    filtered.push(conn);\n  }\n}\n\n// Kembalikan dalam format n8n\nreturn [{\n  json: {\n    connection: filtered\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        848
+      ],
+      "id": "07ced7c9-7659-4f90-b7e0-9f257381a6e1",
+      "name": "Get Active Connector"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawConnectionList = items[0].json[\"connection\"] || [];\nlet inactivate_arr = [];\nlet unique_name;\n\nfor (let i = 0; i < rawConnectionList.length; i++) {\n  let name = rawConnectionList[i].name;\n  let source = rawConnectionList[i].source;\n  let target = rawConnectionList[i].target;\n  if(Array.isArray(rawConnectionList[i].elementParameter)){\n    let unique_name_obj = rawConnectionList[i].elementParameter.find(({name}) => name === \"UNIQUE_NAME\")\n    unique_name = unique_name_obj.value;\n  }else {\n    unique_name = rawConnectionList[i].elementParameter.value\n  }\n\n  \n  inactivate_arr.push({\n    name: name,\n    source: source,\n    target: target,\n    unique_name : unique_name\n  });\n}\n\n// Kembalikan dalam format n8n\nreturn [{\n  json: {\n    \"inActivate Connection\": inactivate_arr\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        640
+      ],
+      "id": "6ecb1917-cd78-4624-8dcb-fe29931f927f",
+      "name": "InActivate Connecetion List"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawConnectionList = items[0].json[\"connection\"] || [];\nlet activate_arr = [];\nlet unique_name ;\n\nfor (let i = 0; i < rawConnectionList.length; i++) {\n  let name = rawConnectionList[i].name;\n  let source = rawConnectionList[i].source;\n  let target = rawConnectionList[i].target;\n  \n  if(Array.isArray(rawConnectionList[i].elementParameter)){\n    let unique_name_obj = rawConnectionList[i].elementParameter.find(({name}) => name === \"UNIQUE_NAME\")\n    unique_name = unique_name_obj.value;\n  }else {\n    unique_name = rawConnectionList[i].elementParameter.value\n  }\n  \n\n  activate_arr.push({\n    name: name,\n    source: source,\n    target: target,\n    unique_name : unique_name\n  });\n}\n\n// Kembalikan dalam format n8n\nreturn [{\n  json: {\n    \"Activate Connection\": activate_arr\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        848
+      ],
+      "id": "7b0920e2-5183-46f7-8cc2-05799a9774db",
+      "name": "Activate Connecetion List"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -816,
+        752
+      ],
+      "id": "89bb5a6c-f30d-4c81-b602-eec33049ee80",
+      "name": "Merge Connector List"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json;\n\n// Ambil semua koneksi\nconst inactivateConnections = data[\"inActivate Connection\"] || [];\nconst activateConnections = data[\"Activate Connection\"] || [];\n\n// Ambil semua target dari masing-masing\nconst inactiveTargets = inactivateConnections.map(conn => conn.target);\nconst activeTargets = activateConnections.map(conn => conn.target);\n\n// Hilangkan duplikat\nconst uniqueInactive = [...new Set(inactiveTargets)];\nconst uniqueActive = new Set(activeTargets); // Set untuk pencarian cepat\n\n// Ambil hanya target yang tidak ada di daftar aktif\nconst trulyInactive = uniqueInactive.filter(t => !uniqueActive.has(t));\n\n// Kembalikan dalam bentuk array n8n\n// return trulyInactive.map(t => ({ json: { trulyInactiveTarget: t } }));\nreturn [{ json: { trulyInactiveTargets: trulyInactive } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        752
+      ],
+      "id": "20338e9c-f8b0-4f2d-8372-2757acd9e42b",
+      "name": "Get Truly Inactive Targets"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -624,
+        464
+      ],
+      "id": "20cddfe0-e7f7-4f5c-8849-ab2ccd65fbd0",
+      "name": "Merge Node and Connector List"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json;\n\n// Ambil daftar node dan target yang tidak aktif\nconst nodes = data[\"node \"] || [];\nconst trulyInactive = new Set(data.trulyInactiveTargets || []);\n\n// Filter node yang uniqueName-nya tidak ada di daftar tidak aktif\nconst filteredNodes = nodes.filter(node => !trulyInactive.has(node.uniqueName));\n\n// Bungkus hasilnya dalam format yang kamu minta\nreturn [{\n  json: {\n    \"node \": filteredNodes\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        464
+      ],
+      "id": "8e6b895f-0aa4-4a64-8871-493d181506f7",
+      "name": "Remove Inactivate Node Based On Connector"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil isi node dari input pertama\nconst rawNodeList = items[0].json[\"node \"] || [];\n\n// Filter node yang tidak memiliki checkParam.name === 'ACTIVATE' dan field === 'CHECK'\nconst filtered = rawNodeList.filter(node => {\n  const check = node.checkParam;\n  if (!check) return true;\n  return !(check.name === \"ACTIVATE\" && check.field === \"CHECK\");\n});\n\n// Bungkus hasil kembali dalam struktur yang sama seperti input\nreturn [{\n  json: {\n    \"node \": filtered\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        448
+      ],
+      "id": "3914ac93-6b24-49fe-aaa8-3667806460ca",
+      "name": "Remove Inactive Node Based On Node Check Value"
+    },
+    {
+      "parameters": {
+        "jsCode": "const datamart_schema = $input.first().json.DATAMART\nconst staging_schema = $input.first().json.STAGING\nconst source_data = $input.first().json[\"SOURCE DATA\"]\nconst others_schema = $input.first().json.OTHERS\n\n// const datamart_schema = [\n//   'BM_BDA_DANA_PST',\n//   'BM_BDA_KREDIT_PST',\n//   'DATAMART_PST',\n//   'NEWDATAMART_PST',\n//   'SPM_DATA'\n// ]\n\n// const staging_schema = [\n//   'DATAMART_STG',\n//   'NEWDATAMART_STG',\n//   'PROD_BM_BDA_STG',\n// ]\n\n// const source_data = [\n//   'BM_BDA_MDM_PST',\n//   'BM_BDA_PROFITABILITY_PST',\n//   'PRM',\n//   'PROD_BM_BDA_PST',\n// ]\n\n// const others_schema = [\n//   'AUDIT_TRAIL',\n// ]\n\n// Fungsi untuk mapping schema ke kategori\nfunction mapSchemaCategory(tableName, componentName) {\n  const schema = tableName.split('.')[0].toUpperCase();\n\n  if (datamart_schema.includes(schema)) return 'DATAMART';\n  else if (staging_schema.includes(schema) && componentName != 'tOracleInput') return 'STAGING';\n  else if  (source_data.includes(schema) && componentName == 'tOracleInput') return 'SOURCE DATA';\n  else if (source_data.includes(schema)) return 'SOURCE DATA';\n  else if (others_schema.includes(schema)) return 'OTHERS';\n  // else return 'UNKNOW'\n\n  return 'UNKNOWN';\n}\n\n// Ambil semua input dari node sebelumnya\nconst items = $input.all();\n\n// Mapping schema ke kategori\nconst results = items.map(item => {\n  // const target_table_name = item.json.FinalTable;\n  const source_table_name = item.json.source_table_name.toUpperCase();\n  const componentName = item.json.componentName;\n  // const job_name          = item.json.JobName;\n  // const pic_job = item.json.PICJob;\n  const source_table_category = mapSchemaCategory(source_table_name, componentName);\n  const schema_name       = item.json.source_table_name.split(\".\",2)[0]\n  const table_name        = item.json.source_table_name.split(\".\",2)[1]\n\n  return {\n    json: {\n      source_table_name: source_table_name.toUpperCase(),\n      source_table_category : source_table_category.toUpperCase(),\n      schema_name : schema_name.toUpperCase(),\n      table_name : table_name.toUpperCase(),\n      componentName : componentName\n    }\n  };\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        64
+      ],
+      "id": "c5db9c0e-5340-4286-b428-c5bb6778fedd",
+      "name": "Mapping Source Category Table1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  'DATAMART' : $input.all()\n    .filter(item => item.json.category === 'DATAMART')\n    .map(item => item.json.schema_name) ,\n  'SOURCE DATA' : $input.all()\n    .filter(item => item.json.category === 'SOURCE DATA')\n    .map(item => item.json.schema_name) ,\n  'STAGING' : $input.all()\n    .filter(item => item.json.category === 'STAGING')\n    .map(item => item.json.schema_name) ,\n  'OTHERS' : $input.all()\n    .filter(item => item.json.category === 'OTHERS')\n    .map(item => item.json.schema_name) ,\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        240
+      ],
+      "id": "37742aaa-9c61-4883-a58d-d1e2e8ffca99",
+      "name": "Category Table Data from Database"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -1264,
+        1744
+      ],
+      "id": "fa6e57c7-406a-49dd-ad60-f0be00df77c3",
+      "name": "Merge JobName form User Input and Properties Files"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c669ef59-ad7f-4ed0-ba98-f70c0823dad9",
+              "name": "JobName_Properties",
+              "value": "={{ $json.job_name }}",
+              "type": "string"
+            },
+            {
+              "id": "81083f57-1867-4120-8941-5de7abc34b41",
+              "name": "JobName_UserInput",
+              "value": "={{ $json.JobName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1040,
+        1744
+      ],
+      "id": "37448cb6-c937-4fa5-b429-7b8ee0b3f7a4",
+      "name": "Rename JobName Field"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7c30827f-e893-4248-b53e-fd4cb8403332",
+              "leftValue": "={{ $json.JobName_Properties.toUpperCase() }}",
+              "rightValue": "={{ $json.JobName_UserInput.toUpperCase() }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -848,
+        1744
+      ],
+      "id": "1e677f44-8902-498b-b7ad-4fe2b240214e",
+      "name": "Check If User Input Job Name and Properties File Job Name"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b5bd291-cb8a-4764-ac84-608a3212b37c",
+              "name": "JobName",
+              "value": "={{ $json.JobName_UserInput }}",
+              "type": "string"
+            },
+            {
+              "id": "ea437dec-52d9-46c5-811d-e4e7320633a1",
+              "name": "MatchJobName",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        1664
+      ],
+      "id": "1a221919-1b76-4ba3-83d6-707bb03ff8a2",
+      "name": "Set true if match"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "272b2f0c-6cf3-41d8-86a6-b7d95d669b9f",
+              "name": "JobName",
+              "value": "={{ $json.JobName_Properties }}",
+              "type": "string"
+            },
+            {
+              "id": "458c07f2-4a6a-4026-8b5d-3520b0062aea",
+              "name": "MatchJobName",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "e55e50d1-29b9-4603-b95d-930116406607",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        1840
+      ],
+      "id": "982e2cc2-d6a1-478c-b611-d5c028cae33b",
+      "name": "Set false if does not match"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -448,
+        1744
+      ],
+      "id": "fb49b79f-be3e-4f60-bd61-f85863310c70",
+      "name": "Merge matching data"
+    },
+    {
+      "parameters": {
+        "content": "## Match User Input Job Name With Properties Job Name\nif match return ture and not return false",
+        "height": 880,
+        "width": 1644
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1552,
+        1616
+      ],
+      "id": "48bbbd7f-d458-4d41-93c2-0495df7f4db7",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -448,
+        1968
+      ],
+      "id": "302136a3-4d75-4264-bca8-5a542c7b0fca",
+      "name": "Merge JobNameMatch with Other Job Information",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Remove Inactivate Node\nInactivate node chek by \"check\" value false and by inactivate connector ",
+        "height": 664,
+        "width": 1500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        384
+      ],
+      "id": "767c18bb-73b8-46ea-a360-783ef79ba01a",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ffdcc9c-136e-4ed3-861f-21afcc1d1b1f",
+              "name": "JobName",
+              "value": "={{ $json.JobName[0].toUpperCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "d2ef2fc3-fd24-4118-98ee-981f4fe08553",
+              "name": "MatchJobName",
+              "value": "={{ $json.MatchJobName }}",
+              "type": "boolean"
+            },
+            {
+              "id": "2e0615c5-34fd-4138-ad60-f65d329005e7",
+              "name": "PICJob",
+              "value": "={{ $json.PICJob[0].toUpperCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "6ba22da9-1212-4fc2-bf8f-13fc945c126d",
+              "name": "FinalTable",
+              "value": "={{ $json.FinalTable}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        1968
+      ],
+      "id": "55e3b2d2-0887-4239-9eca-aa3074ef4efc",
+      "name": "Rename Field"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "faaf1ca4-3a2e-441d-9af1-bc3f3cdd884c",
+              "name": "componentName",
+              "value": "={{ $json.componentName }}",
+              "type": "string"
+            },
+            {
+              "id": "35e60dce-8873-4ab7-8587-8d90775dac80",
+              "name": "query_num",
+              "value": "={{ $itemIndex }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        384
+      ],
+      "id": "bcec9312-035a-44bc-807c-cffb3ae8fd0f",
+      "name": "Get Component Name"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1392,
+        144
+      ],
+      "id": "55106175-63f4-4477-b614-055492601346",
+      "name": "Merge Source Table Name and Component Name"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "main_schemacategorymapping",
+          "mode": "list",
+          "cachedResultName": "main_schemacategorymapping"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1616,
+        240
+      ],
+      "id": "f26212fe-d7fc-4eea-8558-0248c2951f06",
+      "name": "Select Source Table Category  from database",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "8hlQydlGDX7Wh676",
+          "name": "data_lineage_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet merged = [];\n\n// Gabungkan dan parse semua array dari properti \"output\"\nfor (const item of items) {\n  const componentName = item.json.componentName;\n\n  try {\n    // Ambil bagian array valid dari output\n    const output = item.json.output;\n\n    // Cari array JSON dalam string (gunakan regex untuk ambil bagian dalam [])\n    const match = output.match(/\\[(.*?)\\]/s);\n    if (!match) continue;\n\n    const arrayStr = `[${match[1]}]`.replace(/(\\r\\n|\\n|\\r)/gm, \"\").replace(/,\\s*]/, \"]\");\n    const parsed = JSON.parse(arrayStr);\n\n    if (Array.isArray(parsed)) {\n      for (const table of parsed) {\n        merged.push({ source_table_name: table, componentName });\n      }\n    }\n  } catch (err) {\n    // Jika gagal parse, skip\n    continue;\n  }\n}\n\n// Hapus duplikat berdasarkan kombinasi table + componentName\nconst seen = new Set();\nconst unique = merged.filter(item => {\n  const key = `${item.source_table_name}::${item.componentName}`;\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// Kembalikan sebagai array of objects\nreturn unique.map(({ source_table_name, componentName }) => ({\n  json: { source_table_name, componentName }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        48
+      ],
+      "id": "8a853469-b4ae-43f5-a1bd-4f4d51c9a47b",
+      "name": "Cleaning Source Table Output"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1856,
+        64
+      ],
+      "id": "e4250637-d779-4e9f-a7fe-0badd951f574",
+      "name": "Merge Source Table and Category Table data"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -64,
+        1952
+      ],
+      "id": "981bb86f-88ad-4c58-8060-04aa19fc51f7",
+      "name": "Merge Job Information and Source Table Data"
+    },
+    {
+      "parameters": {
+        "path": "={{ $('If1').item.json.ftp_path[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.ftp",
+      "typeVersion": 1,
+      "position": [
+        -2608,
+        528
+      ],
+      "id": "2ab17fb1-88bd-4999-804c-4c2ab3913e30",
+      "name": "FTP",
+      "retryOnFail": true,
+      "executeOnce": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "ftp": {
+          "id": "kt8lIOmArfbmpDVU",
+          "name": "FTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "path"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -3472,
+        1280
+      ],
+      "id": "9e73c490-d4ee-4271-b5a2-818f74bb5133",
+      "name": "Aggregate",
+      "executeOnce": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3488,
+        1552
+      ],
+      "id": "7e331cf4-59cc-4569-ae02-d88d8302d737",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil data dari Item pertama (path) dan Item kedua (ftp_path)\n// Asumsi inputnya sesuai JSON yang Anda kirim (2 item terpisah)\nconst item0 = $input.all()[0].json;\nconst item1 = $input.all()[1].json;\n\nconst pathList   = item0.path || [];\nconst ftpList    = item1.job_path || [];\nconst JobName    = item1.job_name || [];\nconst PICJob     = item1.pic_job || [];\nconst FinalTable = item1.output_table || [];\nconst JobID      = item1.job_id?.[0] || null;\n\n// Normalisasi path: ubah backslash ke forward slash dan lowercase\nconst normalizePathList = pathList.map(p => p.replace(/\\\\/g, '/').toLowerCase().trim());\nconst normalizeFtpList = ftpList.map(p => p.replace(/\\\\/g, '/').toLowerCase().trim());\n\n// Debug: cek isi array\nconsole.log('Normalized pathList:', normalizePathList);\nconsole.log('Normalized ftpList:', normalizeFtpList);\n\n// Mencari file yang ada di KEDUA list (Intersection)\nconst matchingFiles = ftpList.filter(ftpFile => {\n  const ftpFileName = ftpFile.split(/[/\\\\]/).pop().toLowerCase();\n  return pathList.some(pathFile => {\n    const pathFileName = pathFile.split(/[/\\\\]/).pop().toLowerCase();\n    return pathFileName === ftpFileName;\n  });\n});\nconsole.log('Matching files:', matchingFiles);\n\n// Logika Return\nif (matchingFiles.length > 0) {\n  // Jika ada yang sama, kembalikan ftp_path (file yang cocok)\n  return [\n    {\n      json: {\n        ftp_path: matchingFiles,\n        JobName: JobName,\n        PICJob: PICJob,\n        FinalTable: FinalTable,\n        JobID: JobID\n      }\n    }\n  ];\n} else {\n  // Jika tidak ada yang sama, kosongkan output\n  return [\n    {\n      json: {\n        ftp_path: [],\n        JobName: JobName,\n        JobID: JobID\n      }\n    }\n  ];\n}\n\n// // Mengambil data dari Item pertama (path) dan Item kedua (ftp_path)\n// // Asumsi inputnya sesuai JSON yang Anda kirim (2 item terpisah)\n// const item0 = $input.all()[0].json;\n// const item1 = $input.all()[1].json;\n\n\n\n// const pathList   = item0.path || [];\n// const ftpList    = item1.job_path || [];\n// const JobName    = item1.job_name || [];\n// const PICJob     = item1.pic_job || [];\n// const FinalTable = item1.output_table || [];\n// const JobID      = item1.job_id?.[0] || null;\n\n\n\n// // Mencari file yang ada di KEDUA list (Intersection)\n\n// // handling case untuk \\ diganti jadi /\n// const matchingFiles = ftpList.filter(file => pathList.includes(file));\n\n// // Logika Return\n// if (matchingFiles.length > 0) {\n//   // Jika ada yang sama, kembalikan ftp_path (file yang cocok)\n//   return [\n//     {\n//       json: {\n//         ftp_path: matchingFiles,\n//         JobName: JobName,\n//         PICJob : PICJob,\n//         FinalTable : FinalTable,\n//         JobID : JobID ,\n        \n          \n//       }\n//     }\n//   ];\n// } else {\n//   // Jika tidak ada yang sama, kosongkan output (stop workflow)\n//   return [\n//     {\n//     json: {\n//       ftp_path: matchingFiles,\n//       JobName : JobName , \n//       JobID : JobID ,\n//       }\n//     }\n//   ];\n// }\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3360,
+        1552
+      ],
+      "id": "795d4c4b-5a45-42a0-8717-e5b72174fc37",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "787ebbdb-53fd-4f2b-b0ba-38661985d6f3",
+              "leftValue": "={{$json.ftp_path[0]}}",
+              "rightValue": ".zip",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            },
+            {
+              "id": "57536cd2-ab73-4cf2-a5f9-5239a1bc986d",
+              "leftValue": "={{$json.ftp_path[0]}}",
+              "rightValue": ".ZIP",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3056,
+        1552
+      ],
+      "id": "51b09a7a-3ac1-4d4b-8276-a130f5edbfa2",
+      "name": "If1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        368,
+        384
+      ],
+      "id": "bc9d2ec0-8b00-42a8-b43f-8db11b86c828",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "r0OpUOcvaxThCX30",
+          "name": "Groq account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "list"
+      },
+      "type": "n8n-nodes-base.ftp",
+      "typeVersion": 1,
+      "position": [
+        -3664,
+        1280
+      ],
+      "id": "95bdcd46-d378-4a6f-9443-107bee7d16bd",
+      "name": "List file from FTP folder",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "ftp": {
+          "id": "kt8lIOmArfbmpDVU",
+          "name": "FTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "tableName": {
+          "__rl": true,
+          "value": "job_upload_sessions",
+          "mode": "list",
+          "cachedResultName": "job_upload_sessions"
+        },
+        "additionalFields": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3792,
+        1552
+      ],
+      "id": "5f724e7c-5fb7-4db7-a1c0-3b500e1f2370",
+      "name": "Postgres Trigger",
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $json.JobID }}",
+            "log_message": "Sedang Mengunduh: File Job berhasil ditemukan di FTP.",
+            "status": "On Progress",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2880,
+        1456
+      ],
+      "id": "b3314027-fb8c-46bf-9bd6-edbd4ebc8494",
+      "name": "Insert rows in a table1",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $json.JobID }}",
+            "status": "Upload Failed",
+            "log_message": "File Job tidak ditemukan di FTP. Mohon periksa kembali nama file dan unggah ulang.",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [
+            "job_id"
+          ],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2880,
+        1664
+      ],
+      "id": "7a6a8509-bf19-4f0a-ade5-2d3e0c8b7486",
+      "name": "Insert Upload Failed",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### Get Input Job File from Django DB \n",
+        "height": 176,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3712,
+        1232
+      ],
+      "typeVersion": 1,
+      "id": "dcf28dcc-29fd-4b69-acea-4355b26f30f7",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "content": "### Get Input Job File from Django DB \n",
+        "height": 240,
+        "width": 640,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3840,
+        1488
+      ],
+      "typeVersion": 1,
+      "id": "32fb937c-7c41-4db8-a3a9-6bc9ec5290e2",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "payload.job_path",
+              "renameField": "="
+            },
+            {
+              "fieldToAggregate": "payload.job_name"
+            },
+            {
+              "fieldToAggregate": "payload.pic_job"
+            },
+            {
+              "fieldToAggregate": "payload.output_table"
+            },
+            {
+              "fieldToAggregate": "payload.job_id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -3648,
+        1552
+      ],
+      "id": "2d91fa99-916f-491a-80b4-ccac43fc4cef",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "content": "### Check input path in ftp folder\n",
+        "height": 432,
+        "width": 432,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3152,
+        1408
+      ],
+      "typeVersion": 1,
+      "id": "792d624e-2a7a-4d4d-86c0-d949c2065c39",
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fda813f9-3beb-4fa2-a207-0f40119b424b",
+              "leftValue": "={{$('Compression').item.binary.file_0.fileExtension }}",
+              "rightValue": "properties",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "22cb64df-7b52-438f-9022-97b44cd80958",
+              "leftValue": "={{$('Compression').item.binary.file_1.fileExtension }}",
+              "rightValue": "screenshot",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "5a358c52-f4d4-4a20-a9b0-d0e5fc12c338",
+              "leftValue": "={{$('Compression').item.binary.file_2.fileExtension }}",
+              "rightValue": "item",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2048,
+        -32
+      ],
+      "id": "3b938a42-f669-4d6a-87d5-4884173627fb",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "log_message": "Verifikasi file berhasil. Job file lengkap. Sedang cleaning dan mengganti contex paramaeter dengan value asli ",
+            "status": "On Progress",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1888,
+        -144
+      ],
+      "id": "ebb69c93-0068-41cf-ac16-4b99b488432b",
+      "name": "Insert rows in a table",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "status": "Upload Failed",
+            "log_message": "File Job tidak lengkap atau rusak (corrupt). Silakan unggah ulang file yang valid.",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [
+            "job_id"
+          ],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1888,
+        80
+      ],
+      "id": "a3e68d84-52b0-4525-95b4-9c5f3a8745fb",
+      "name": "Insert Upload Failed1",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "log_message": "Berhasil membersihkan query dan mengganti contex parameter",
+            "status": "On Progress",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        144,
+        -192
+      ],
+      "id": "4dcccea9-b654-4793-81fe-47aff5913903",
+      "name": "Insert rows in a table2",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0057b1cc-c5ce-4e6d-b1dc-336cb83d08e4",
+              "leftValue": "={{ $item.json.error }} ",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1616,
+        528
+      ],
+      "id": "3ab0f2dc-869d-4ac4-ba2c-f066a320f533",
+      "name": "Check If AI Error"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "log_message": "Koneksi ke layanan AI terputus. Sistem gagal memproses permintaan.",
+            "status": "Upload Failed",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1808,
+        464
+      ],
+      "id": "1dc0993f-7837-4d03-b10e-62ef8c507789",
+      "name": "Insert rows in a table3",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "log_message": "Berhasil mengenerate source table dari Job",
+            "status": "On Progress",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1808,
+        608
+      ],
+      "id": "fcd25dc4-5dd9-445f-8755-0494c263ee47",
+      "name": "Insert rows in a table4",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d7fe0ff0-4637-458e-91d1-d45a99426a4a",
+              "name": "job_id",
+              "value": "={{ $json.job_id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2208,
+        2384
+      ],
+      "id": "d8171cea-8a61-4b7a-9e56-5c0761a40d7d",
+      "name": "Get JobID"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -64,
+        2368
+      ],
+      "id": "3bfa699d-aed6-47a8-9dec-dc179e9fb522",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "content": "## Cleaning Output, Insert into Database, and Send API Responses",
+        "height": 1064,
+        "width": 2892
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        208,
+        2592
+      ],
+      "id": "4d87d0dc-dcd0-4fad-9b9d-509f11017d1d",
+      "name": "Sticky Note15"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7b68b8be-80f8-4938-b38d-55d1e2e8a672",
+              "leftValue": "={{ $json.source_table_category }}",
+              "rightValue": "UNKNOWN",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        3008
+      ],
+      "id": "59625646-0a15-4897-b091-f92c311ae011",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "165c013d-49c5-4e12-833e-2230f53d59a5",
+              "leftValue": "={{ $json.source_table_category }}",
+              "rightValue": "UNKNOWN",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        3136
+      ],
+      "id": "91ecc5fb-18e5-4b62-8f1a-a666744719fb",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript').item.json.JobID }}",
+            "log_message": "Berhasil mengekstrak lineage, tetapi ada data yang belum terpetakan. Silahkan tinjau skema!",
+            "status": "Need Confirmation",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        480,
+        2912
+      ],
+      "id": "688515ad-f2eb-4feb-a61a-a927c3a3d914",
+      "name": "update logs -> unknown schema",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('HTTP Request1').item.json.job_id ?? null }}",
+            "log_message": "Selesai: Seluruh data berhasil disimpan ke Database Utama",
+            "status": "Done",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1424,
+        3104
+      ],
+      "id": "ddea42e2-5adc-497e-bb09-c0ab293d1c03",
+      "name": "update logs -> all detected schema",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "staging_detected_tables",
+          "mode": "list",
+          "cachedResultName": "staging_detected_tables"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Merge2').item.json.job_id }}",
+            "table_name": "={{ $('Merge2').item.json.source_table_name }}",
+            "table_category": "={{ $('Merge2').item.json.source_table_category }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "table_id",
+              "displayName": "table_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "table_name",
+              "displayName": "table_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "table_category",
+              "displayName": "table_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1232,
+        2720
+      ],
+      "id": "e02d0b10-a2de-4caa-bf76-5d8ed337177e",
+      "name": "Insert all data apabila ada schema category yang null",
+      "executeOnce": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d53ac41c-59de-418d-885f-d8fe045e246d",
+              "name": "job_id",
+              "value": "={{ $('Merge2').item.json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6df740d1-c68e-4279-a9c0-b46ec16f623f",
+              "name": "JobName",
+              "value": "={{ $('Merge2').item.json.JobName }}",
+              "type": "string"
+            },
+            {
+              "id": "04afbf58-2d72-4d3e-8361-9345e82cddbd",
+              "name": "source_table_name",
+              "value": "={{ $('Merge2').item.json.source_table_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf2f126-46c7-478a-b4e0-26c46cb9cf1e",
+              "name": "source_table_category",
+              "value": "={{ $('Merge2').item.json.source_table_category }}",
+              "type": "string"
+            },
+            {
+              "id": "dbe180d0-c2c9-4816-abd9-803aa56a64e6",
+              "name": "FinalTable",
+              "value": "={{ $json.FinalTable[0] }}",
+              "type": "array"
+            },
+            {
+              "id": "f77ba825-3220-474b-bddf-207bf7d534df",
+              "name": "PICJob",
+              "value": "={{ $json.PICJob }}",
+              "type": "array"
+            },
+            {
+              "id": "9acb28ae-1389-4166-a16e-0678a12d48f8",
+              "name": "schema_name",
+              "value": "={{ $json.schema_name }}",
+              "type": "string"
+            },
+            {
+              "id": "89c8d123-a70e-4d5a-9fa4-02adea8d1b67",
+              "name": "table_name",
+              "value": "={{ $json.table_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        3232
+      ],
+      "id": "4e47d604-512a-400c-914c-0eb0be8c9664",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "### BENERIN LAGI , BIKIN FUNGSI DI PYHTON UNTUK HANDLING REQUEST INPUTAN ALL KNOWN SCHEMA ",
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        976,
+        3072
+      ],
+      "id": "87a55176-d38f-4f91-ab01-ce8ea6313570",
+      "name": "Sticky Note16"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $('Merge2').all()) {\n  if (item.json.source_table_category == 'UNKNOWN') {\n    return $input.all();\n  }\n}\nreturn []\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        2736
+      ],
+      "id": "ca50c751-e38a-48a8-95cc-db9cece5f55e",
+      "name": "Code in JavaScript1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ddd8b3a-e051-4537-9a7c-0e20a9ac6cb8",
+              "name": "is_unknown_category",
+              "value": "={{ $if($json.source_table_category == 'UNKNOWN', true , false) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        2736
+      ],
+      "id": "6787bb01-ffa7-4df3-8574-cb572c62cc39",
+      "name": "add column is_unknown_category"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "JobName",
+              "value": "={{ $json.JobName[0]}}"
+            },
+            {
+              "key": "PICJob",
+              "value": "={{ $json.PICJob[0] }}"
+            },
+            {
+              "key": "FinalTable",
+              "value": "={{ $json.FinalTable[0] }}"
+            },
+            {
+              "key": "JobID",
+              "value": "={{ $json.JobID }}"
+            },
+            {
+              "key": "ftp_path",
+              "value": "={{ $json.ftp_path[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -3200,
+        1552
+      ],
+      "id": "f0c0630e-7051-4b74-88d2-830dc65b498a",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "JobName",
+              "value": "={{ $json.JobName[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -2592,
+        1744
+      ],
+      "id": "89fc4619-abee-4db9-9145-738e17ba0262",
+      "name": "Execution Data1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "PICJob",
+              "value": "={{ $json.PICJob[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -2592,
+        1952
+      ],
+      "id": "d4ac7744-bb2d-4d72-b34c-0d59fb3d438b",
+      "name": "Execution Data2"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "FinalTable",
+              "value": "={{ $json.FinalTable[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -2592,
+        2160
+      ],
+      "id": "66bd79d4-54c4-41fb-8858-c4b8fa64a1b4",
+      "name": "Execution Data3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/n8n/lineage/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1024,
+        3232
+      ],
+      "id": "475ffb31-fb8d-454d-a81c-a0f01e412952",
+      "name": "HTTP Request1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    data: allItems\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        3232
+      ],
+      "id": "7ac690ff-9c81-479d-aa3a-52027ab7cab2",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Code in JavaScript2').first().json.data[0].job_id }}",
+            "status": "Upload Failed",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}",
+            "log_message": "=Ekstraksi lineage berhasil, namun gagal disimpan ke database utama. Log error :  {{ $json.errors }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "log_id"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2784,
+        3312
+      ],
+      "id": "b7c8f351-046b-4d59-b5c3-05ec24674f9c",
+      "name": "update logs -> all detected schema1",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d73acf4a-7985-439d-92aa-3b816decc927",
+              "leftValue": "={{$('Code in JavaScript1').item.json}}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "47618eba-238c-4d53-90cc-4e8a6d500f62",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        2736
+      ],
+      "id": "2db67c45-7b15-4acd-abf3-92c2cee0c8c6",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3a154ec7-0d12-48c0-9f98-9aa6c1867780",
+              "leftValue": "={{ $json.job_created }}",
+              "rightValue": "=true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        3232
+      ],
+      "id": "3edf66c1-caaa-4d08-b6ee-88df801f616e",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c4db644-be60-4090-b0a0-d45f8c5db894",
+              "name": "errors",
+              "value": "={{ $json.errors }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        3328
+      ],
+      "id": "0527ecec-1ae3-4490-8203-3d094a5e435d",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "errors",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        3328
+      ],
+      "id": "f174b9e4-8962-4572-a923-aef41e062c1c",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "496fccf3-c169-4ee9-b0a2-3ac7dcc55e8a",
+              "leftValue": "={{ $json.errors }}",
+              "rightValue": "already exists for job ",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2352,
+        3216
+      ],
+      "id": "9bb3138a-4f57-41b3-8be6-138aea9235e0",
+      "name": "If6",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Done",
+            "job_id": "={{ $('Code in JavaScript2').first().json.data[0].job_id }}",
+            "log_message": "Selesai: Seluruh data berhasil disimpan ke Database Utama",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2576,
+        3088
+      ],
+      "id": "625ef12a-35f1-453e-a45c-1041d6c28d72",
+      "name": "Insert rows in a table5",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nif ($input.first().json) {\n  return [\n    {\n      \"status\" : \"Need Confirmation\"\n    }\n  ]\n}\n\n\nreturn [{}] ;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        2720
+      ],
+      "id": "e2fdec52-df50-4f55-8443-d65578528e9c",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1936,
+        3200
+      ],
+      "id": "8621434f-0e4b-40f4-9dcc-d2a5b0c5c095",
+      "name": "Merge3",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7cfaaafb-2cd1-414d-ab36-6cead64f92ff",
+              "leftValue": "={{ $input.item.json.status.trim() }} ",
+              "rightValue": "Need Confirmation",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2128,
+        3200
+      ],
+      "id": "02ddfb04-8258-43da-8bd8-2c754d40bd6f",
+      "name": "If7",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all().map(item => item.json.errors);\n \nreturn [{\n  json: {\n    errors: allItems\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2576,
+        3312
+      ],
+      "id": "ebe551a7-3096-44f8-940a-bd6b0f325d88",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is my SQL query:\n{{ $input.item.json.query}}\n\nPlease extract the schema name and source table names and return the result as a array like this:\n[\"schema_name.table_name1\", \"schema_name.table_name2\"]",
+        "options": {
+          "systemMessage": "You are a specialized SQL parser that extracts ONLY physical source tables stored in a database.\n\nYour task:\nExtract schema-qualified table names that appear in:\n\n* FROM clauses\n* JOIN clauses (INNER, LEFT, RIGHT, FULL, CROSS, etc.)\n\nSTRICT RULES:\n\n1. ONLY return tables that physically exist in the database.\n2. ONLY return names in the format: schema_name.table_name\n3. NEVER return:\n\n   * CTE names defined in WITH clauses\n   * Subquery aliases\n   * Inline views\n   * Temporary tables (#temp, ##temp)\n   * Table variables (@table)\n   * Derived tables\n   * Aliases\n   * Any name that is not a real persisted database table\n4. If a CTE or subquery exists:\n\n   * Ignore the CTE name itself.\n   * Extract ONLY the real physical tables referenced inside it.\n5. If a table is not schema-qualified, assume it is a physical table and return it as-is.\n6. Remove duplicates.\n7. Do NOT guess or fabricate schema names.\n8. Output must be a valid JSON array of strings.\n9. Output must contain ONLY the raw JSON array — no explanation, no markdown, no extra text.\n\nOutput format example:\n[\"schema_name.table1\", \"schema_name.table2\"]\n\nIf no physical tables are found, return:\n[]\n\nReturn ONLY the JSON array."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        480,
+        240
+      ],
+      "id": "1c606091-1617-4b92-b642-b5b08f0c760f",
+      "name": "Data Lineage Agent1",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        480,
+        448
+      ],
+      "id": "d6ef1e13-e3d9-475f-bb9f-07129c5bee03",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "sobksFkm9GFhutQj",
+          "name": "Groq account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        672,
+        496
+      ],
+      "id": "9fc241f2-06af-4522-8862-3df0d3dd9ff6",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "l0AawzZbCgx5lFO2",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1008,
+        112
+      ],
+      "id": "4b69eae6-2f24-4eef-96fe-0a3cc33ee2bc",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is my SQL query:\n{{ $input.item.json.query}}\n\nPlease extract the schema name and source table names and return the result as a array like this:\n[\"schema_name.table_name1\", \"schema_name.table_name2\"]",
+        "options": {
+          "systemMessage": "You are a specialized SQL parser that extracts ONLY physical source tables stored in a database.\n\nYour task:\nExtract schema-qualified table names that appear in:\n\n* FROM clauses\n* JOIN clauses (INNER, LEFT, RIGHT, FULL, CROSS, etc.)\n\nSTRICT RULES:\n\n1. ONLY return tables that physically exist in the database.\n2. ONLY return names in the format: schema_name.table_name\n3. NEVER return:\n\n   * CTE names defined in WITH clauses\n   * Subquery aliases\n   * Inline views\n   * Temporary tables (#temp, ##temp)\n   * Table variables (@table)\n   * Derived tables\n   * Aliases\n   * Any name that is not a real persisted database table\n4. If a CTE or subquery exists:\n\n   * Ignore the CTE name itself.\n   * Extract ONLY the real physical tables referenced inside it.\n5. If a table is not schema-qualified, assume it is a physical table and return it as-is.\n6. Remove duplicates.\n7. Do NOT guess or fabricate schema names.\n8. Output must be a valid JSON array of strings.\n9. Output must contain ONLY the raw JSON array — no explanation, no markdown, no extra text.\n\nOutput format example:\n[\"schema_name.table1\", \"schema_name.table2\"]\n\nIf no physical tables are found, return:\n[]\n\nReturn ONLY the JSON array."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        672,
+        304
+      ],
+      "id": "412f5381-9427-4930-a38e-3b41d1cb9e53",
+      "name": "Data Lineage Agent2",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Done",
+            "job_id": "={{ $('Code in JavaScript2').first().json.data[0].job_id }}",
+            "log_message": "Selesai: Seluruh data berhasil disimpan ke Database Utama",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2352,
+        3040
+      ],
+      "id": "5e854e29-acc8-42da-9653-c019dc237aad",
+      "name": "Insert rows in a table6",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Compression": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from File3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from File3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Filter Screenshot File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FIlter Item File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Properties File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Job Name From Properties File": {
+      "main": [
+        [
+          {
+            "node": "Merge JobName form User Input and Properties Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FIlter Item File": {
+      "main": [
+        [
+          {
+            "node": "Replace Context Variable to Actual Value",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Node Value",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Connector Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Properties File": {
+      "main": [
+        [
+          {
+            "node": "Extract Job Name From Properties File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Context Variable to Actual Value": {
+      "main": [
+        [
+          {
+            "node": "Merge Context and SQL Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Node Value": {
+      "main": [
+        [
+          {
+            "node": "Filter Only Node Include SQL and Cleaning SQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Only Node Include SQL and Cleaning SQL Query": {
+      "main": [
+        [
+          {
+            "node": "Remove Inactive Node Based On Node Check Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Context and SQL Data": {
+      "main": [
+        [
+          {
+            "node": "Replace Context Parameter in SQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Context Parameter in SQL Query": {
+      "main": [
+        [
+          {
+            "node": "Get SQL Only for Inference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Component Name",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SQL Only for Inference": {
+      "main": [
+        [
+          {
+            "node": "Data Lineage Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Lineage Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Data Lineage Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Connector Data": {
+      "main": [
+        [
+          {
+            "node": "Get Inactive Connector",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Active Connector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Inactive Connector": {
+      "main": [
+        [
+          {
+            "node": "InActivate Connecetion List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Connector": {
+      "main": [
+        [
+          {
+            "node": "Activate Connecetion List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "InActivate Connecetion List": {
+      "main": [
+        [
+          {
+            "node": "Merge Connector List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Connecetion List": {
+      "main": [
+        [
+          {
+            "node": "Merge Connector List",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Connector List": {
+      "main": [
+        [
+          {
+            "node": "Get Truly Inactive Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Truly Inactive Targets": {
+      "main": [
+        [
+          {
+            "node": "Merge Node and Connector List",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Node and Connector List": {
+      "main": [
+        [
+          {
+            "node": "Remove Inactivate Node Based On Connector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Inactivate Node Based On Connector": {
+      "main": [
+        [
+          {
+            "node": "Merge Context and SQL Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Remove Inactive Node Based On Node Check Value": {
+      "main": [
+        [
+          {
+            "node": "Merge Node and Connector List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapping Source Category Table1": {
+      "main": [
+        [
+          {
+            "node": "Merge Job Information and Source Table Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Category Table Data from Database": {
+      "main": [
+        [
+          {
+            "node": "Merge Source Table and Category Table data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge JobName form User Input and Properties Files": {
+      "main": [
+        [
+          {
+            "node": "Rename JobName Field",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename JobName Field": {
+      "main": [
+        [
+          {
+            "node": "Check If User Input Job Name and Properties File Job Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If User Input Job Name and Properties File Job Name": {
+      "main": [
+        [
+          {
+            "node": "Set true if match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set false if does not match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set true if match": {
+      "main": [
+        [
+          {
+            "node": "Merge matching data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set false if does not match": {
+      "main": [
+        [
+          {
+            "node": "Merge matching data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge matching data": {
+      "main": [
+        [
+          {
+            "node": "Merge JobNameMatch with Other Job Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge JobNameMatch with Other Job Information": {
+      "main": [
+        [
+          {
+            "node": "Rename Field",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Field": {
+      "main": [
+        [
+          {
+            "node": "Merge Job Information and Source Table Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Component Name": {
+      "main": [
+        [
+          {
+            "node": "Merge Source Table Name and Component Name",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Source Table Name and Component Name": {
+      "main": [
+        [
+          {
+            "node": "Cleaning Source Table Output",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Select Source Table Category  from database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check If AI Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Source Table Category  from database": {
+      "main": [
+        [
+          {
+            "node": "Category Table Data from Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cleaning Source Table Output": {
+      "main": [
+        [
+          {
+            "node": "Merge Source Table and Category Table data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Source Table and Category Table data": {
+      "main": [
+        [
+          {
+            "node": "Mapping Source Category Table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Job Information and Source Table Data": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Upload Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Lineage Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FTP": {
+      "main": [
+        [
+          {
+            "node": "Compression",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get JobID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List file from FTP folder": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Trigger": {
+      "main": [
+        [
+          {
+            "node": "List file from FTP folder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filter Screenshot File": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Upload Failed1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "FTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If AI Error": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table4": {
+      "main": [
+        []
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        []
+      ]
+    },
+    "Get JobID": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "add column is_unknown_category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "update logs -> unknown schema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update logs -> unknown schema": {
+      "main": [
+        []
+      ]
+    },
+    "update logs -> all detected schema": {
+      "main": [
+        []
+      ]
+    },
+    "Insert all data apabila ada schema category yang null": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add column is_unknown_category": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge JobName form User Input and Properties Files",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execution Data2": {
+      "main": [
+        [
+          {
+            "node": "Merge JobNameMatch with Other Job Information",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execution Data3": {
+      "main": [
+        [
+          {
+            "node": "Merge JobNameMatch with Other Job Information",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Insert all data apabila ada schema category yang null",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "update logs -> all detected schema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "If7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If7": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "update logs -> all detected schema1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Lineage Agent1": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Data Lineage Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Lineage Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Lineage Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Lineage Agent2": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Merge Source Table Name and Component Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bb2190a6-529b-4af5-883f-a1190886b300",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8425d4678722221322b88584e4449e8fc40ce97904a28798474a93780db735b8"
+  },
+  "id": "KyQUt48MnX3IKtiH",
+  "tags": []
+}

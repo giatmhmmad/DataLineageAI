@@ -1,0 +1,637 @@
+{
+  "name": "Detect Update Unknown Schema Table",
+  "nodes": [
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "tableName": {
+          "__rl": true,
+          "value": "staging_detected_tables",
+          "mode": "list",
+          "cachedResultName": "staging_detected_tables"
+        },
+        "firesOn": "UPDATE",
+        "additionalFields": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTrigger",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        0
+      ],
+      "id": "802412a2-589e-4a8b-b1f8-320aa19559a0",
+      "name": "Postgres Trigger",
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_sessions",
+          "mode": "list",
+          "cachedResultName": "job_upload_sessions"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "job_id",
+              "value": "={{ $json.payload.job_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "58d9ce64-8c54-47bc-bdad-e7354c252f7d",
+      "name": "Select rows from a table",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d53ac41c-59de-418d-885f-d8fe045e246d",
+              "name": "job_id",
+              "value": "={{ $('Select rows from a table').item.json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6df740d1-c68e-4279-a9c0-b46ec16f623f",
+              "name": "JobName",
+              "value": "={{ $('Select rows from a table').item.json.job_name }}",
+              "type": "string"
+            },
+            {
+              "id": "dbe180d0-c2c9-4816-abd9-803aa56a64e6",
+              "name": "FinalTable",
+              "value": "={{  $('Select rows from a table').item.json.output_table }}",
+              "type": "array"
+            },
+            {
+              "id": "f77ba825-3220-474b-bddf-207bf7d534df",
+              "name": "PICJob",
+              "value": "={{  $('Select rows from a table').item.json.pic_job }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        0
+      ],
+      "id": "1bbed87e-ee1c-4433-9081-4d7810b7abb3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "staging_detected_tables",
+          "mode": "list",
+          "cachedResultName": "staging_detected_tables"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "job_id",
+              "value": "={{ $json.payload.job_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -272,
+        320
+      ],
+      "id": "5cbecc6d-72a7-4b1f-bf36-7fa6f66c42ef",
+      "name": "Select rows from a table1",
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        128,
+        304
+      ],
+      "id": "f578963b-4d8f-4de5-9711-20ff00a10a88",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    data: allItems\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        304
+      ],
+      "id": "23b5e77b-4f8b-4614-9f98-1152dccc5695",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/n8n/lineage/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        528,
+        304
+      ],
+      "id": "9e9dc4d7-659a-4797-9abd-34616d526876",
+      "name": "HTTP Request1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3a154ec7-0d12-48c0-9f98-9aa6c1867780",
+              "leftValue": "={{ $('HTTP Request1').item.json.errors }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        304
+      ],
+      "id": "f8089719-bd36-46f0-a73b-d2e498be8d0b",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Edit Fields').item.json.job_id }}",
+            "log_message": "Selesai: Seluruh data berhasil disimpan ke Database Utama",
+            "status": "Success",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": []
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        928,
+        176
+      ],
+      "id": "f262987a-391f-4119-97cf-2a61f8f514dd",
+      "name": "update logs -> all detected schema",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "job_upload_logs",
+          "mode": "list",
+          "cachedResultName": "job_upload_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('Edit Fields').first().json.job_id }}",
+            "status": "Upload Failed",
+            "update_time": "={{ $now.setZone('Asia/Jakarta').toSQL() }}",
+            "log_message": "LOREM IPSUM"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "log_id",
+              "displayName": "log_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_message",
+              "displayName": "log_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "update_time",
+              "displayName": "update_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "log_id"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        928,
+        448
+      ],
+      "id": "47893598-7a07-459a-b1a6-f504b0d5301a",
+      "name": "update logs -> all detected schema1",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "staging_detected_tables",
+          "mode": "list",
+          "cachedResultName": "staging_detected_tables"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "job_id",
+              "value": "={{ $('Edit Fields').item.json.job_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1136,
+        176
+      ],
+      "id": "abf93b16-ef16-41f9-bcc0-0e0b432b7f71",
+      "name": "Delete table or rows",
+      "credentials": {
+        "postgres": {
+          "id": "9FJwZseHuGCeVT2v",
+          "name": "bot_eda"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d1d59a-80ab-40eb-8383-10e3e70e45c0",
+              "name": "source_table_name",
+              "value": "={{ $json.table_name }}",
+              "type": "string"
+            },
+            {
+              "id": "5b6732c0-ec50-4526-b80b-289c7b4325b3",
+              "name": "source_table_category",
+              "value": "={{ $json.table_category }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        320
+      ],
+      "id": "41bb0082-84cb-4348-8701-43a5a5c01a8a",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Postgres Trigger": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Select rows from a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "update logs -> all detected schema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update logs -> all detected schema1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update logs -> all detected schema": {
+      "main": [
+        [
+          {
+            "node": "Delete table or rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5a02b72f-380c-43de-97b9-d960a6ebe57e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8425d4678722221322b88584e4449e8fc40ce97904a28798474a93780db735b8"
+  },
+  "id": "NRendKeqcq2Vuhra",
+  "tags": []
+}

@@ -4,7 +4,7 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 
 ---
 
-## 📋 Daftar Isi
+## Daftar Isi
 
 - [Tentang Project](#tentang-project)
 - [Fitur](#fitur)
@@ -15,11 +15,13 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 - [Menjalankan Project](#menjalankan-project)
 - [Fitur AI Chatbot](#fitur-ai-chatbot)
 - [Struktur Project](#struktur-project)
-- [Konfigurasi](#konfigurasi)
+- [Konfigurasi](#konfigurasi-tambahan)
+- [Troubleshooting](#troubleshooting)
+- [Kontributor](#kontributor)
 
 ---
 
-## 🚀 Tentang Project
+## Tentang Project
 
 **Data Lineage EDA** adalah aplikasi web berbasis Django yang dirancang untuk membantu tim Data Engineer dan Analyst mengelola dan melacak lineage (silsilah) data dalam ekosistem ETL bank Mandiri.
 
@@ -39,14 +41,14 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 
 ---
 
-## ✨ Fitur
+## Fitur
 
-### 📊 Dashboard Utama
+### Dashboard Utama
 - Statistik keseluruhan: total job, tabel, relationship, dan data sources
 - Navigasi cepat ke semua fitur
 - Tampilan ringkas dan informatif
 
-### 📋 Manajemen Tabel Database
+### Manajemen Tabel Database
 - **Create Table**: Tambah tabel baru secara manual atau via CSV upload
 - **Edit Table**: Modifikasi detail tabel termasuk kolom (column name, data type, description)
 - **View Table**: Lihat detail tabel lengkap dengan relasi masuk (incoming) dan keluar (outgoing)
@@ -54,7 +56,7 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 - **Search & Filter**: Pencarian tabel berdasarkan nama atau kategori (DATAMART, STAGING, SOURCE DATA, OTHER)
 - Auto-kategori berdasarkan schema mapping
 
-### ⚙️ Manajemen Job ETL
+### Manajemen Job ETL
 - **Create Job**: Tambah job baru dengan target table dan developer
 - **Edit Job**: Modifikasi informasi job, termasuk penambahan source table relationship
 - **View Job**: Detail job lengkap dengan semua source dan target table
@@ -62,26 +64,26 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 - **Upload Job**: Upload job script ke sistem dengan path ZIP dan informasi target table
 - **Download Excel**: Export detail job ke file Excel untuk dokumentasi
 
-### 🔗 Manajemen Relationship
+### Manajemen Relationship
 - **Upload Relationship**: Upload relationship via CSV dengan format Job Name, Target Table, Source Tables
 - **Relationship List**: Lihat semua relationship dengan fitur search
 - Otomatis create job jika belum ada saat upload relationship
 
-### 🖥️ Visualisasi Data Lineage
+### Visualisasi Data Lineage
 - **Interactive Graph**: Visualisasi graf interaktif untuk melihat aliran data
 - **Focus Table**: Pilih tabel fokus untuk melihat upstream dan downstream
 - **Depth Control**: Atur kedalaman visualisasi lineage
 - **Auto-complete**: Pencarian tabel cepat dengan suggestions
 - **Category Colors**: Warna berbeda untuk setiap kategori tabel
 
-### 👥 Manajemen Developer
+### Manajemen Developer
 - **Create Developer**: Tambah developer baru dengan department dan team
 - **Edit Developer**: Update informasi developer
 - **View Developer**: Lihat detail developer dan job yang ditangani
 - **Delete Developer**: Hapus developer dari sistem
 - **Search Developer**: Pencarian berdasarkan nama, departemen, atau team
 
-### 📝 Upload Logs Monitoring
+### Upload Logs Monitoring
 - **Status Tracking**: Pantau status upload job (Done, On Progress, Need Confirmation, Upload Failed)
 - **Log History**: Riwayat log detail setiap proses upload
 - **Tab Filtering**: Filter berdasarkan status
@@ -89,7 +91,7 @@ Sistem manajemen data lineage untuk melacak aliran data antar tabel dan job ETL,
 - **Refresh Status**: Otomatis refresh status dari log terbaru
 - **Retry Count**: Informasi jumlah retry upload
 
-### 🤖 AI Chatbot (Groq API)
+### AI Chatbot (Groq API)
 Fitur chatbot AI yang memungkinkan pengguna bertanya dalam bahasa natural untuk mendapatkan informasi tentang:
 
 **Info Job:**
@@ -116,7 +118,7 @@ Fitur chatbot AI yang memungkinkan pengguna bertanya dalam bahasa natural untuk 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Komponen | Teknologi |
 |---|---|
@@ -130,7 +132,7 @@ Fitur chatbot AI yang memungkinkan pengguna bertanya dalam bahasa natural untuk 
 
 ---
 
-## 📦 Prasyarat
+## Prasyarat
 
 Sebelum instalasi, pastikan sudah terinstall:
 
@@ -141,7 +143,7 @@ Sebelum instalasi, pastikan sudah terinstall:
 
 ---
 
-## ⚙️ Instalasi & Setup
+## Instalasi & Setup
 
 ### 1. Clone Repository
 
@@ -213,7 +215,7 @@ GROQ_API_KEY = 'your-groq-api-key-here'
 
 ---
 
-## 🗄️ Migrasi Database
+## Migrasi Database
 
 ### Restore dari File Dump (Recommended)
 
@@ -248,7 +250,7 @@ python manage.py collectstatic --noinput
 
 ---
 
-## ▶️ Menjalankan Project
+## Menjalankan Project
 
 ```bash
 # Pastikan virtual environment aktif
@@ -268,7 +270,7 @@ Buka browser dan akses: **http://127.0.0.1:8000**
 
 ---
 
-## 🤖 Fitur AI Chatbot
+## Fitur AI Chatbot
 
 Akses chatbot di menu **AI Chatbot** pada sidebar.
 
@@ -298,7 +300,7 @@ Akses chatbot di menu **AI Chatbot** pada sidebar.
 
 ---
 
-## 📁 Struktur Project
+## Struktur Project
 
 ```
 data-lineage/
@@ -343,7 +345,7 @@ data-lineage/
 
 ---
 
-## 📖 Konfigurasi Tambahan
+## Konfigurasi Tambahan
 
 ### Database Router
 
@@ -372,7 +374,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Masalah Umum
 
@@ -394,6 +396,6 @@ CSRF_TRUSTED_ORIGINS = [
 
 ---
 
-## 👥 Kontributor
+## Kontributor
 
 Tim Data Management - ODP IT Bank Mandiri

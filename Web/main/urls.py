@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from .views import *
+from .chatbot_views import chatbot_page, chatbot_ask, chatbot_clear
 
 urlpatterns = [
     path('', dashboard, name='dashboard'),
@@ -44,5 +45,10 @@ urlpatterns = [
     path('developers/delete/<int:developer_id>/', delete_developer, name='delete_developer'),
     path('developers/create/', create_developer, name='create_developer'),
     
+    # Chatbot URL
+    path('chatbot/', chatbot_page, name='chatbot'),
+    path('chatbot/ask/', chatbot_ask, name='chatbot_ask'),
+    path('chatbot/clear/', chatbot_clear, name='chatbot_clear'),
+
     # Add more URL patterns as needed
 ]

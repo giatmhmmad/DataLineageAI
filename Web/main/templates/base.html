@@ -66,10 +66,16 @@
                         <span class="nav-text">Upload Logs</span>
                     </a>
                 </div>
-                <div class="nav-item">  
+                <div class="nav-item">
                     <a href="{% url 'developer_list' %}" class="nav-link {% if request.resolver_match.url_name == 'developer_list' %}active{% endif %}">
                         <i class="fas fa-user nav-icon"></i>
                         <span class="nav-text">Developers</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'chatbot' %}" class="nav-link {% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}">
+                        <i class="fas fa-robot nav-icon"></i>
+                        <span class="nav-text">AI Chatbot</span>
                     </a>
                 </div>
             </nav>

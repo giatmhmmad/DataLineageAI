@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-a4yx6ji566+o8j07d7w8zq=4)%*%mo6i^nl0vpf=^95rb1xmxp"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '172.20.10.2', '*']  # Add your Linux server IP
 
@@ -79,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'data_lineage_eda',  # Replace with your desired database name
         'USER': 'postgres',       # Replace with your PostgreSQL username
-        'PASSWORD': 'hello123',   # Replace with your PostgreSQL password
+        'PASSWORD': '123456',   # Replace with your PostgreSQL password
         'HOST': 'localhost',           # Or the IP address of your PostgreSQL server
         'PORT': '5432',                # Default PostgreSQL port
     },
@@ -87,7 +87,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'bot_eda',  # Replace with your desired database name
         'USER': 'postgres',       # Replace with your PostgreSQL username
-        'PASSWORD': 'hello123',   # Replace with your PostgreSQL password
+        'PASSWORD': '123456',   # Replace with your PostgreSQL password
         'HOST': 'localhost',           # Or the IP address of your PostgreSQL server
         'PORT': '5432',                # Default PostgreSQL port
     }
@@ -161,6 +161,9 @@ CSRF_TRUSTED_ORIGINS = [
 # Security settings for production
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 SECURE_REFERRER_POLICY = None
+
+# Groq API Configuration
+GROQ_API_KEY = ""
 
 # Logging configuration
 LOGGING = {

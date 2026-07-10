@@ -1,0 +1,611 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Chatbot - Data Lineage{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chatbot-container {
+        max-width: 900px;
+        margin: 0 auto;
+        height: calc(100vh - 200px);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .chat-header p {
+        margin: 5px 0 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+
+    .btn-clear {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background 0.2s;
+    }
+
+    .btn-clear:hover {
+        background: rgba(255,255,255,0.3);
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+        border-left: 1px solid #dee2e6;
+        border-right: 1px solid #dee2e6;
+    }
+
+    .message {
+        margin-bottom: 15px;
+        display: flex;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+        justify-content: flex-end;
+    }
+
+    .message.bot {
+        justify-content: flex-start;
+    }
+
+    .message-bubble {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 15px;
+        word-wrap: break-word;
+    }
+
+    .message.user .message-bubble {
+        background: #1e3a5f;  /* Biru gelap */
+        color: white;
+        border-bottom-right-radius: 2px;
+    }
+
+    .message.bot .message-bubble {
+        background: #e9ecef;  /* Abu muda */
+        color: #333;
+        border: 1px solid #dee2e6;
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .message.bot .message-bubble.error {
+        background: #fff5f5;
+        border-color: #feb2b2;
+        color: #c53030;
+    }
+
+    /* Styling untuk tag <code> di dalam bubble */
+    .message-bubble code {
+        background: none;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: #212529 !important;
+    }
+
+    /* Semua teks di dalam bubble bot harus gelap */
+    .message.bot .message-bubble {
+        color: #212529 !important;
+    }
+
+    .message.bot .message-bubble p,
+    .message.bot .message-bubble li,
+    .message.bot .message-bubble h6,
+    .message.bot .message-bubble strong {
+        color: #212529 !important;
+    }
+
+    /* Table wrapper untuk overflow */
+    .table-wrapper {
+        overflow-x: auto;
+        margin-top: 8px;
+    }
+
+    /* TABEL STYLING - Warna website #01008c */
+    .message-bubble table thead th {
+        background-color: #01008c !important;
+        color: white !important;
+        padding: 8px;
+        font-size: 0.875rem;
+    }
+
+    .message-bubble table tbody tr:hover {
+        background-color: rgba(1, 0, 140, 0.08) !important;
+    }
+
+    .message-bubble table {
+        border-color: #dee2e6 !important;
+        font-size: 0.875rem;
+    }
+
+    .message-bubble table td {
+        color: #212529;
+    }
+
+    /* Code tag dalam tabel */
+    .message-bubble table code {
+        background: #f8f9fa;
+        color: #212529;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.85em;
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+
+    .message.user .message-time {
+        text-align: right;
+    }
+
+    .chat-input-container {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 0 0 10px 10px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 25px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .btn-send {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-send:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-send:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .data-table {
+        width: 100%;
+        margin-top: 10px;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        text-align: left;
+    }
+
+    .data-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .data-table tr:nth-child(even) {
+        background: #f8f9fa;
+    }
+
+    .welcome-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .welcome-message i {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 15px;
+    }
+
+    .welcome-message h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 15px;
+    }
+
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-5px); }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}AI Chatbot{% endblock %}
+{% block page_description %}Tanyakan apapun tentang job ETL dan data lineage{% endblock %}
+
+{% block content %}
+<div class="chatbot-container">
+    <div class="chat-header">
+        <div>
+            <h3><i class="fas fa-robot"></i> AI Chatbot</h3>
+            <p>Asisten ETL untuk query job, analisis impact, dan insight</p>
+        </div>
+        <button class="btn-clear" onclick="clearChat()">
+            <i class="fas fa-trash"></i> Clear Chat
+        </button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        {# Chat history loaded from localStorage via JavaScript #}
+    </div>
+
+    <div class="chat-input-container">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Tulis pertanyaan Anda..." onkeypress="handleKeyPress(event)">
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i> Kirim
+        </button>
+    </div>
+</div>
+
+<script>
+    // localStorage key for chat history
+    var CHAT_STORAGE_KEY = 'chatbot_history';
+    var conversationHistory = [];  // Untuk context di backend
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    function sendQuestion(question) {
+        document.getElementById('chatInput').value = question;
+        sendMessage();
+    }
+
+    // Load chat history from localStorage
+    function loadChatHistory() {
+        var stored = localStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    // Save chat history to localStorage
+    function saveChatHistory(history) {
+        // Keep only last 50 messages
+        if (history.length > 50) {
+            history = history.slice(-50);
+        }
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(history));
+    }
+
+    // Get current timestamp
+    function getTimestamp() {
+        return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function sendMessage() {
+        var input = document.getElementById('chatInput');
+        var question = input.value.trim();
+
+        if (!question) return;
+
+        // Add user message
+        var userMessage = {
+            sender: 'user',
+            text: question,
+            timestamp: getTimestamp()
+        };
+
+        addMessageToUI(userMessage);
+        input.value = '';
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        // Save to localStorage
+        var history = loadChatHistory();
+        history.push(userMessage);
+        saveChatHistory(history);
+
+        // DEBUG: Log history yang akan dikirim
+        console.log('History dikirim:', conversationHistory.slice(-10));
+
+        // Send to backend dengan conversation history
+        fetch('/chatbot/ask/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                question: question,
+                history: JSON.stringify(conversationHistory.slice(-6))  // 6 pesan terakhir
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // DEBUG: Log response dari backend
+            console.log('Mentioned job dari backend:', data.mentioned_job);
+            console.log('Intent:', data.intent);
+
+            hideTypingIndicator();
+
+            var botMessage;
+            if (data.success) {
+                botMessage = {
+                    sender: 'bot',
+                    text: data.answer,
+                    data: data.data,
+                    intent: data.intent,
+                    timestamp: getTimestamp()
+                };
+            } else {
+                botMessage = {
+                    sender: 'bot',
+                    text: data.answer || 'Maaf, terjadi kesalahan.',
+                    data: { error: true },
+                    intent: null,
+                    timestamp: getTimestamp()
+                };
+            }
+
+            addMessageToUI(botMessage, botMessage.data && botMessage.data.error);
+
+            // Update conversation history untuk context
+            conversationHistory.push({role: 'user', content: question});
+            conversationHistory.push({role: 'assistant', content: data.answer});
+
+            // Save to localStorage
+            history = loadChatHistory();
+            history.push(botMessage);
+            saveChatHistory(history);
+        })
+        .catch(error => {
+            hideTypingIndicator();
+            var errorMessage = {
+                sender: 'bot',
+                text: 'Maaf, terjadi kesalahan saat memproses permintaan.',
+                data: { error: true },
+                intent: null,
+                timestamp: getTimestamp()
+            };
+            addMessageToUI(errorMessage, true);
+            console.error('Error:', error);
+        });
+    }
+
+    function showTypingIndicator() {
+        var messagesContainer = document.getElementById('chatMessages');
+        var existingTyping = messagesContainer.querySelector('.typing-indicator');
+        if (existingTyping) return;
+
+        var typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot typing-indicator';
+        typingDiv.innerHTML = '<span></span><span></span><span></span>';
+        messagesContainer.appendChild(typingDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        var typing = document.querySelector('.typing-indicator');
+        if (typing) typing.remove();
+    }
+
+    function addMessageToUI(msg, isError) {
+        var messagesContainer = document.getElementById('chatMessages');
+
+        // Remove welcome message if exists
+        var welcomeMsg = messagesContainer.querySelector('.welcome-message');
+        if (welcomeMsg) {
+            welcomeMsg.remove();
+        }
+
+        var messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + msg.sender;
+
+        // Tampilkan HTML dari LLM (bukan escape) agar tabel rendering benar
+        var bubbleContent = '<div class="message-bubble' + (isError ? ' error' : '') + '">' + msg.text + '</div>';
+
+        // Add data table if available
+        if (msg.sender === 'bot' && msg.data && msg.intent) {
+            bubbleContent += renderDataTable(msg.intent, msg.data);
+        }
+
+        bubbleContent += '<div class="message-time">' + (msg.timestamp || '') + '</div>';
+
+        messageDiv.innerHTML = bubbleContent;
+        messagesContainer.appendChild(messageDiv);
+
+        // Rapikan semua tabel dengan class Bootstrap
+        var bubble = messageDiv.querySelector('.message-bubble');
+        if (bubble) {
+            bubble.querySelectorAll('table').forEach(function(t) {
+                t.classList.add('table', 'table-bordered', 'table-striped', 'table-sm', 'table-hover');
+                t.style.fontSize = '0.85rem';
+                // Wrap dalam table-wrapper jika belum ada
+                if (!t.parentElement.classList.contains('table-wrapper')) {
+                    var wrapper = document.createElement('div');
+                    wrapper.classList.add('table-wrapper');
+                    wrapper.style.overflowX = 'auto';
+                    wrapper.style.marginTop = '8px';
+                    t.parentNode.insertBefore(wrapper, t);
+                    wrapper.appendChild(t);
+                }
+            });
+        }
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function renderDataTable(intent, data) {
+        if (!data) return '';
+        if (typeof data === 'string') return '';
+        if (data.error) return '';  // Don't render table for error responses
+
+        var html = '';
+
+        // Job failure table
+        if (intent === 'job_failure' && Array.isArray(data) && data.length > 0) {
+            html = '<table class="data-table"><thead><tr><th>No</th><th>Job Name</th><th>Jumlah Gagal</th></tr></thead><tbody>';
+            data.forEach(function(job, index) {
+                html += '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(job.job_name || '') + '</td><td>' + job.failure_count + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+
+        // Latest jobs table (from insights)
+        if (intent === 'job_insights' && data.latest_jobs && data.latest_jobs.length > 0) {
+            html = '<table class="data-table"><thead><tr><th>No</th><th>Job Name</th><th>Status</th><th>Upload Time</th></tr></thead><tbody>';
+            data.latest_jobs.forEach(function(job, index) {
+                html += '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(job.job_name || '') + '</td><td>' + escapeHtml(job.current_status || '') + '</td><td>' + (job.upload_time || '-') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+
+        return html;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function clearChat() {
+        if (!confirm('Apakah Anda yakin ingin menghapus semua chat?')) return;
+
+        // Clear localStorage
+        localStorage.removeItem(CHAT_STORAGE_KEY);
+
+        // Clear conversation history
+        conversationHistory = [];
+
+        // Clear UI
+        var messagesContainer = document.getElementById('chatMessages');
+        messagesContainer.innerHTML = '<div class="welcome-message"><i class="fas fa-robot"></i><h4>Chat Cleared</h4><p>Silakan ajukan pertanyaan baru.</p></div>';
+    }
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Load chat history on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        var history = loadChatHistory();
+
+        if (history.length > 0) {
+            var messagesContainer = document.getElementById('chatMessages');
+
+            // Add messages from history
+            history.forEach(function(msg) {
+                var isError = msg.data && msg.data.error;
+                addMessageToUI(msg, isError);
+            });
+        } else {
+            // Show welcome message
+            var messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = '<div class="welcome-message"><i class="fas fa-robot"></i><h4>Selamat Datang!</h4><p>Tanyakan apapun tentang job ETL, status, durasi, atau dampak ke job lain.</p></div>';
+        }
+    });
+</script>
+{% endblock %}

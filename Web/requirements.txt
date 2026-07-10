@@ -2,7 +2,9 @@ asgiref==3.11.1
 certifi==2026.2.25
 charset-normalizer==3.4.4
 Django==6.0.2
+dj-database-url==2.3.0
 et_xmlfile==2.0.0
+gunicorn==23.0.0
 idna==3.11
 openpyxl==3.1.5
 psycopg2-binary==2.9.11

@@ -15,9 +15,17 @@ venv.bak/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+django_errors.log
 
 # VS Code
 .vscode/
 
 # Staticfiles
 staticfiles/
+
+# Database dumps (will be converted to SQL for deployment)
+*.dump
+
+# Environment files
+.env
+*.sql

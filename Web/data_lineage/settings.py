@@ -188,3 +188,53 @@ LOGGING = {
         },
     },
 }
+
+# ============================================================
+# PRODUCTION SETTINGS - RENDER
+# ============================================================
+
+import os
+import dj_database_url
+
+# Ambil semua config dari environment variables
+# sehingga tidak ada credential yang hardcode di kode
+
+# Secret key dari env var (wajib di production)
+if os.environ.get('DJANGO_SECRET_KEY'):
+    SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+
+# Debug mode - matikan di production
+if os.environ.get('DJANGO_DEBUG') == 'False':
+    DEBUG = False
+
+# Allowed hosts untuk Render
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, 'localhost', '127.0.0.1']
+
+# Database default (data_lineage_eda) dari Render PostgreSQL
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.parse(
+        os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+
+# Database bot_eda dari Render PostgreSQL kedua
+if os.environ.get('BOT_EDA_DATABASE_URL'):
+    DATABASES['bot_eda'] = dj_database_url.parse(
+        os.environ.get('BOT_EDA_DATABASE_URL'),
+        conn_max_age=600
+    )
+
+# Groq API Key dari env var
+if os.environ.get('GROQ_API_KEY'):
+    GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+
+# Whitenoise untuk static files
+MIDDLEWARE_LIST = list(MIDDLEWARE)
+if 'whitenoise.middleware.WhiteNoiseMiddleware' not in MIDDLEWARE_LIST:
+    MIDDLEWARE_LIST.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    MIDDLEWARE = MIDDLEWARE_LIST
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

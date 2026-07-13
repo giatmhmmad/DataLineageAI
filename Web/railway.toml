@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "./build.sh"
+
+[deploy]
+numReplicas = 1
+restartPolicyType = "on_failure"
+restartPolicyLimit = 5
+
+[deploy.procfile]
+web = "gunicorn data_lineage.wsgi:application --bind 0.0.0.0:$PORT"
+
+[env]
+PYTHON_VERSION = "3.12"

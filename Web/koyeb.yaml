@@ -1,0 +1,7 @@
+build:
+  buildpack:
+    build_command: "./build.sh"
+  type: buildpack
+
+run:
+  command: "gunicorn data_lineage.wsgi:application --bind 0.0.0.0:$PORT"

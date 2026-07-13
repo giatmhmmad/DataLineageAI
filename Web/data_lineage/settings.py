@@ -190,7 +190,7 @@ LOGGING = {
 }
 
 # ============================================================
-# PRODUCTION SETTINGS - RAILWAY + NEON
+# PRODUCTION SETTINGS - KOYEB + NEON
 # ============================================================
 
 import os
@@ -205,16 +205,19 @@ if os.environ.get('DJANGO_SECRET_KEY'):
 # Debug mode - matikan di production
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# Allowed hosts untuk Railway
-RAILWAY_PUBLIC_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
-RAILWAY_PRIVATE_DOMAIN = os.environ.get('RAILWAY_PRIVATE_DOMAIN', '')
-if RAILWAY_PUBLIC_DOMAIN:
+# Allowed hosts untuk Koyeb
+# Koyeb otomatis set PUBLIC_DOMAIN
+KOYEB_PUBLIC_DOMAIN = os.environ.get('PUBLIC_DOMAIN', '')
+if KOYEB_PUBLIC_DOMAIN:
     ALLOWED_HOSTS = [
-        RAILWAY_PUBLIC_DOMAIN,
-        RAILWAY_PRIVATE_DOMAIN,
+        KOYEB_PUBLIC_DOMAIN,
+        '.koyeb.app',
         'localhost',
         '127.0.0.1',
     ]
+else:
+    # Fallback jika env var belum di-set
+    ALLOWED_HOSTS = ['*']
 
 # Database default - Neon
 if os.environ.get('DATABASE_URL'):

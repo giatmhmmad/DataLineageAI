@@ -2,10 +2,31 @@
 Chatbot Views - Django Views for AI Chatbot
 """
 import json
+import logging
+import traceback
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+
+logger = logging.getLogger(__name__)
+
+
+def get_groq_client():
+    """
+    Helper function to create Groq client with proper error handling.
+    This handles compatibility issues between groq library versions.
+    """
+    from groq import Groq
+    from django.conf import settings
+    try:
+        client = Groq(api_key=settings.GROQ_API_KEY)
+        return client
+    except TypeError as e:
+        # Handle case where old groq version expects different parameters
+        logger.error(f"Groq client initialization error: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 
 def build_html_table(title, columns, rows):

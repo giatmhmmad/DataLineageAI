@@ -153,6 +153,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # CSRF Settings for production
 CSRF_TRUSTED_ORIGINS = [
+    'https://datalineageai-production.up.railway.app',
     'http://172.20.10.2:8000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
@@ -216,8 +217,14 @@ if RAILWAY_PUBLIC_DOMAIN:
         '127.0.0.1',
     ]
 else:
-    # Fallback jika env var belum di-set
-    ALLOWED_HOSTS = ['*']
+    # Fallback jika env var belum di-set - include Railway static domain
+    ALLOWED_HOSTS = [
+        'datalineageai-production.up.railway.app',
+        '*.railway.app',
+        'localhost',
+        '127.0.0.1',
+        '*',
+    ]
 
 # Database default - Neon
 if os.environ.get('DATABASE_URL'):

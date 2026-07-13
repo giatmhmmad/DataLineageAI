@@ -190,7 +190,7 @@ LOGGING = {
 }
 
 # ============================================================
-# PRODUCTION SETTINGS - RENDER
+# PRODUCTION SETTINGS - RAILWAY + NEON
 # ============================================================
 
 import os
@@ -203,37 +203,40 @@ if os.environ.get('DJANGO_SECRET_KEY'):
     SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # Debug mode - matikan di production
-if os.environ.get('DJANGO_DEBUG') == 'False':
-    DEBUG = False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# Allowed hosts untuk Render
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, 'localhost', '127.0.0.1']
+# Allowed hosts untuk Railway
+RAILWAY_PUBLIC_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
+RAILWAY_PRIVATE_DOMAIN = os.environ.get('RAILWAY_PRIVATE_DOMAIN', '')
+if RAILWAY_PUBLIC_DOMAIN:
+    ALLOWED_HOSTS = [
+        RAILWAY_PUBLIC_DOMAIN,
+        RAILWAY_PRIVATE_DOMAIN,
+        'localhost',
+        '127.0.0.1',
+    ]
 
-# Database default (data_lineage_eda) - Support Render/Neon PostgreSQL
+# Database default - Neon
 if os.environ.get('DATABASE_URL'):
     import dj_database_url
     db_config = dj_database_url.parse(
         os.environ.get('DATABASE_URL'),
         conn_max_age=600
     )
-    # Tambahkan SSL options untuk Neon/Render
     db_config['OPTIONS'] = {'sslmode': 'require'}
     DATABASES['default'] = db_config
 
-# Database bot_eda - Support Render/Neon PostgreSQL
+# Database bot_eda - Neon
 if os.environ.get('BOT_EDA_DATABASE_URL'):
     import dj_database_url
     bot_db_config = dj_database_url.parse(
         os.environ.get('BOT_EDA_DATABASE_URL'),
         conn_max_age=600
     )
-    # Tambahkan SSL options untuk Neon/Render
     bot_db_config['OPTIONS'] = {'sslmode': 'require'}
     DATABASES['bot_eda'] = bot_db_config
 
-# Groq API Key dari env var
+# Groq API Key
 if os.environ.get('GROQ_API_KEY'):
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 

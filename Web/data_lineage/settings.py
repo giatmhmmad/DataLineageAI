@@ -211,21 +211,27 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, 'localhost', '127.0.0.1']
 
-# Database default (data_lineage_eda) dari Render PostgreSQL
+# Database default (data_lineage_eda) - Support Render/Neon PostgreSQL
 if os.environ.get('DATABASE_URL'):
     import dj_database_url
-    DATABASES['default'] = dj_database_url.parse(
+    db_config = dj_database_url.parse(
         os.environ.get('DATABASE_URL'),
         conn_max_age=600
     )
+    # Tambahkan SSL options untuk Neon/Render
+    db_config['OPTIONS'] = {'sslmode': 'require'}
+    DATABASES['default'] = db_config
 
-# Database bot_eda dari Render PostgreSQL kedua
+# Database bot_eda - Support Render/Neon PostgreSQL
 if os.environ.get('BOT_EDA_DATABASE_URL'):
     import dj_database_url
-    DATABASES['bot_eda'] = dj_database_url.parse(
+    bot_db_config = dj_database_url.parse(
         os.environ.get('BOT_EDA_DATABASE_URL'),
         conn_max_age=600
     )
+    # Tambahkan SSL options untuk Neon/Render
+    bot_db_config['OPTIONS'] = {'sslmode': 'require'}
+    DATABASES['bot_eda'] = bot_db_config
 
 # Groq API Key dari env var
 if os.environ.get('GROQ_API_KEY'):

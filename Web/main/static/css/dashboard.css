@@ -803,3 +803,186 @@ button.btn i.fab {
 .form-control[type="file"]:hover::-webkit-file-upload-button {
     background-color: var(--gray-200);
 }
+
+/* ============================================================
+   RESPONSIVE - MOBILE
+   ============================================================ */
+
+/* Tablet dan HP (max 768px) */
+@media (max-width: 768px) {
+
+    /* Sidebar tersembunyi di mobile secara default */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        width: 260px !important;
+    }
+
+    /* Sidebar muncul saat class 'show' ditambahkan */
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    /* Main content full width di mobile */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 60px 15px 15px 15px !important;
+    }
+
+    /* Tabel bisa di-scroll horizontal */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    /* Card full width di mobile */
+    .card {
+        margin-bottom: 15px;
+    }
+
+    /* Tombol hamburger muncul di mobile */
+    #sidebarToggle {
+        display: flex !important;
+    }
+
+    /* Overlay muncul saat sidebar aktif */
+    #sidebarOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    #sidebarOverlay.show {
+        display: block !important;
+    }
+
+    /* Header adjustment */
+    .header {
+        padding: 1rem 1rem 1rem 4rem !important;
+    }
+
+    /* Font size lebih kecil di mobile */
+    body {
+        font-size: 14px;
+    }
+
+    /* Dashboard stats cards - 2 kolom di mobile */
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .stat-card {
+        padding: 1rem !important;
+    }
+
+    .stat-number {
+        font-size: 1.5rem !important;
+    }
+
+    /* Table grid - 1 kolom di mobile */
+    .table-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Form controls full width */
+    .form-control {
+        font-size: 14px;
+    }
+
+    /* Button adjustments */
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    /* Card body padding */
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    /* Header title size */
+    .header h1 {
+        font-size: 1.5rem !important;
+    }
+
+    /* Table card actions */
+    .table-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .table-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* HP kecil (max 480px) */
+@media (max-width: 480px) {
+
+    /* Stats card - 1 kolom di HP kecil */
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tabel font lebih kecil */
+    .table {
+        font-size: 12px;
+    }
+
+    .table th, .table td {
+        padding: 0.5rem;
+    }
+
+    /* Judul halaman lebih kecil */
+    h1, h2, h3, h4 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Smaller icons */
+    .nav-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .nav-link {
+        padding: 0.75rem 1rem;
+    }
+
+    .nav-text {
+        font-size: 0.85rem;
+    }
+
+    /* Sidebar width */
+    .sidebar {
+        width: 220px !important;
+    }
+
+    /* Form adjustments */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+}

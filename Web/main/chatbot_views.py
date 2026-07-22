@@ -12,18 +12,49 @@ from django.views.decorators.http import require_http_methods
 logger = logging.getLogger(__name__)
 
 
+def get_groq_api_key():
+    """
+    Helper function untuk mendapatkan GROQ_API_KEY dengan validasi.
+    Coba dari settings terlebih dahulu, lalu dari environment variable.
+    """
+    from django.conf import settings
+    import os
+
+    # Coba dari settings
+    api_key = getattr(settings, 'GROQ_API_KEY', None)
+
+    # Jika tidak ada di settings, coba dari environment
+    if not api_key:
+        api_key = os.environ.get('GROQ_API_KEY')
+
+    # Logging untuk debugging
+    logger.info(
+        f"GROQ_API_KEY exists={bool(api_key)} "
+        f"length={len(api_key) if api_key else 0}"
+    )
+
+    if not api_key:
+        raise ValueError(
+            "GROQ_API_KEY is missing or empty. "
+            "Please set GROQ_API_KEY in .env file or environment variable."
+        )
+
+    return api_key
+
+
 def get_groq_client():
     """
     Helper function to create Groq client with proper error handling.
     This handles compatibility issues between groq library versions.
     """
     from groq import Groq
-    from django.conf import settings
+
+    api_key = get_groq_api_key()
+
     try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
+        client = Groq(api_key=api_key)
         return client
-    except TypeError as e:
-        # Handle case where old groq version expects different parameters
+    except Exception as e:
         logger.error(f"Groq client initialization error: {e}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise
@@ -605,7 +636,7 @@ Berikan rekomendasi prioritas penanganan singkat.
 JANGAN buat tabel HTML. Tabel sudah disiapkan terpisah.
 """
 
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -746,7 +777,7 @@ Tugas: Buat narasi pembuka 2-3 kalimat yang menjelaskan:
 Gunakan bahasa profesional, tidak kaku.
 JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -849,7 +880,7 @@ Tugas: Buat ringkasan singkat 2 kalimat tentang riwayat
 upload job ini. Sebutkan kapan selesai dan statusnya.
 JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
-                client = Groq(api_key=settings.GROQ_API_KEY)
+                client = get_groq_client()
                 llm_response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
@@ -976,7 +1007,7 @@ PENTING: Jangan buat tabel HTML. Tabel sudah disiapkan.
 Tugas: Buat hanya 1-2 kalimat pembuka tentang source table job ini.
 """
 
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -1018,7 +1049,7 @@ PENTING: Jangan buat tabel HTML. Tabel sudah disiapkan.
 Tugas: Buat hanya 1-2 kalimat pembuka tentang target table job ini.
 """
 
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -1063,7 +1094,7 @@ Tugas: Jawab siapa developer/PIC dari job ini dalam 1-2 kalimat.
 JANGAN buat tabel HTML. Tabel sudah disiapkan.
 """
 
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -1102,7 +1133,7 @@ Tugas: Tampilkan dalam 1-2 kalimat bahwa ada {len(all_devs)} developer yang terd
 JANGAN buat tabel HTML. Tabel sudah disiapkan.
 """
 
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -1283,7 +1314,7 @@ Status: {status}
 Tugas: Buat 1 kalimat ringkasan singkat tentang job ini.
 JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = get_groq_client()
             llm_response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -1445,10 +1476,16 @@ Jangan tambahkan informasi job lain yang tidak ditanyakan."""
 
     except Exception as e:
         import traceback
-        print("CHATBOT ERROR:", traceback.format_exc())
+        print("=" * 50)
+        print("CHATBOT EXCEPTION DETAILS:")
+        print("Exception Type:", type(e).__name__)
+        print("Exception Message:", str(e))
+        print("Full Traceback:")
+        traceback.print_exc()
+        print("=" * 50)
         return JsonResponse({
             'success': False,
-            'answer': f"Debug error: {str(e)}",
+            'answer': f"Debug error: {type(e).__name__}: {str(e)}",
             'intent': 'error',
             'mentioned_job': None
         })

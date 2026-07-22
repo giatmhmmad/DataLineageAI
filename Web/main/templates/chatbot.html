@@ -316,7 +316,7 @@
     </div>
 
     <div class="chat-messages" id="chatMessages">
-        {# Chat history loaded from localStorage via JavaScript #}
+        {# Chat history loaded from sessionStorage via JavaScript #}
     </div>
 
     <div class="chat-input-container">
@@ -332,6 +332,82 @@
     var CHAT_STORAGE_KEY = 'chatbot_history';
     var CONVERSATION_KEY = 'chatbot_conversation';
     var conversationHistory = [];  // Untuk context di backend
+
+    // ============================================================
+    // CHAT PERSISTENCE - sessionStorage (innerHTML approach)
+    // Pindah halaman = chat tetap ada
+    // Refresh = chat hilang
+    // Clear button = chat hilang
+    // ============================================================
+
+    function saveChatState() {
+        try {
+            var chatBox = document.getElementById('chatMessages');
+            if (chatBox) {
+                sessionStorage.setItem('dl_chat_html', chatBox.innerHTML);
+            }
+            if (typeof conversationHistory !== 'undefined') {
+                sessionStorage.setItem('dl_conv_history', JSON.stringify(conversationHistory));
+            }
+        } catch(e) {
+            console.warn('saveChatState error:', e);
+        }
+    }
+
+    // Detect page refresh vs navigation using Performance API
+    // type 0 = navigate (link click, URL bar)
+    // type 1 = reload (F5, Ctrl+R, browser reload button)
+    // type 2 = back-forward (browser back/forward)
+    function isPageRefresh() {
+        var navType = window.performance && window.performance.navigation
+            ? window.performance.navigation.type
+            : -1;
+
+        // type 1 = reload (F5 or Ctrl+R)
+        return navType === 1;
+    }
+
+    function loadChatState() {
+        // Cek apakah ini refresh → jika ya, hapus chat
+        if (isPageRefresh()) {
+            console.log('Page refreshed, clearing chat');
+            clearChatState();
+            return;
+        }
+
+        try {
+            var savedHTML = sessionStorage.getItem('dl_chat_html');
+            var savedHistory = sessionStorage.getItem('dl_conv_history');
+
+            if (savedHTML) {
+                var chatBox = document.getElementById('chatMessages');
+                if (chatBox) {
+                    chatBox.innerHTML = savedHTML;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }
+
+            if (savedHistory) {
+                try {
+                    var parsed = JSON.parse(savedHistory);
+                    if (Array.isArray(parsed)) {
+                        conversationHistory = parsed;
+                    }
+                } catch(e) {
+                    conversationHistory = [];
+                }
+            }
+        } catch(e) {
+            console.warn('loadChatState error:', e);
+            sessionStorage.removeItem('dl_chat_html');
+            sessionStorage.removeItem('dl_conv_history');
+        }
+    }
+
+    function clearChatState() {
+        sessionStorage.removeItem('dl_chat_html');
+        sessionStorage.removeItem('dl_conv_history');
+    }
 
     function handleKeyPress(event) {
         if (event.key === 'Enter') {
@@ -407,6 +483,7 @@
         };
 
         addMessageToUI(userMessage);
+        saveChatState(); // Simpan innerHTML ke sessionStorage
         input.value = '';
 
         // Show typing indicator
@@ -463,6 +540,7 @@
             }
 
             addMessageToUI(botMessage, botMessage.data && botMessage.data.error);
+            saveChatState(); // Simpan innerHTML ke sessionStorage
 
             // Update conversation history untuk context
             conversationHistory.push({role: 'user', content: question});
@@ -486,6 +564,7 @@
                 timestamp: getTimestamp()
             };
             addMessageToUI(errorMessage, true);
+            saveChatState(); // Simpan innerHTML ke sessionStorage
             console.error('Error:', error);
         });
     }
@@ -592,7 +671,8 @@
     function clearChat() {
         if (!confirm('Apakah Anda yakin ingin menghapus semua chat?')) return;
 
-        // Clear sessionStorage
+        // Clear sessionStorage (innerHTML approach)
+        clearChatState();
         sessionStorage.removeItem(CHAT_STORAGE_KEY);
         sessionStorage.removeItem(CONVERSATION_KEY);
 
@@ -621,24 +701,18 @@
 
     // Load chat history on page load
     document.addEventListener('DOMContentLoaded', function() {
-        var history = loadChatHistory();
+        // Load chat state (innerHTML approach)
+        loadChatState();
 
-        // Load conversation history from sessionStorage
-        conversationHistory = loadConversationHistory();
-
-        if (history.length > 0) {
-            var messagesContainer = document.getElementById('chatMessages');
-
-            // Add messages from history
-            history.forEach(function(msg) {
-                var isError = msg.data && msg.data.error;
-                addMessageToUI(msg, isError);
-            });
-        } else {
-            // Show welcome message
-            var messagesContainer = document.getElementById('chatMessages');
-            messagesContainer.innerHTML = '<div class="welcome-message"><i class="fas fa-robot"></i><h4>Selamat Datang!</h4><p>Tanyakan apapun tentang job ETL, status, durasi, atau dampak ke job lain.</p></div>';
+        // Cek apakah ada chat yang di-load
+        var chatBox = document.getElementById('chatMessages');
+        if (chatBox && chatBox.innerHTML.trim() !== '' && !chatBox.querySelector('.welcome-message')) {
+            // Chat sudah ada dari sessionStorage, skip welcome message
+            return;
         }
+
+        // Show welcome message jika tidak ada chat
+        chatBox.innerHTML = '<div class="welcome-message"><i class="fas fa-robot"></i><h4>Selamat Datang!</h4><p>Tanyakan apapun tentang job ETL, status, durasi, atau dampak ke job lain.</p></div>';
     });
 </script>
 {% endblock %}

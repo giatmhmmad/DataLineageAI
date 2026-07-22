@@ -13,15 +13,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
-# Load environment variables from .env file (optional - Railway uses env vars directly)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # dotenv optional - Railway uses environment variables directly
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+# .env should be in the same folder as manage.py (BASE_DIR)
+try:
+    from dotenv import load_dotenv
+    env_path = BASE_DIR / '.env'
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+        print(f"[settings] Loaded .env from: {env_path}")
+    else:
+        print(f"[settings] .env not found at: {env_path}")
+except ImportError:
+    pass  # dotenv optional
 
 
 # Quick-start development settings - unsuitable for production

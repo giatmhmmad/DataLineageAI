@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -88,7 +93,7 @@ DATABASES = {
         'NAME': 'bot_eda',  # Replace with your desired database name
         'USER': 'postgres',       # Replace with your PostgreSQL username
         'PASSWORD': '123456',   # Replace with your PostgreSQL password
-        'HOST': 'localhost',           # Or the IP address of your PostgreSQL server
+        'HOST': 'localhost',           # Or the IP address of your PostgreSQL server.
         'PORT': '5432',                # Default PostgreSQL port
     }
 }

@@ -328,8 +328,9 @@
 </div>
 
 <script>
-    // localStorage key for chat history
+    // sessionStorage keys for chat history
     var CHAT_STORAGE_KEY = 'chatbot_history';
+    var CONVERSATION_KEY = 'chatbot_conversation';
     var conversationHistory = [];  // Untuk context di backend
 
     function handleKeyPress(event) {
@@ -343,9 +344,9 @@
         sendMessage();
     }
 
-    // Load chat history from localStorage
+    // Load chat history from sessionStorage
     function loadChatHistory() {
-        var stored = localStorage.getItem(CHAT_STORAGE_KEY);
+        var stored = sessionStorage.getItem(CHAT_STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
@@ -356,13 +357,35 @@
         return [];
     }
 
-    // Save chat history to localStorage
+    // Load conversation history from sessionStorage
+    function loadConversationHistory() {
+        var stored = sessionStorage.getItem(CONVERSATION_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    // Save chat history to sessionStorage
     function saveChatHistory(history) {
         // Keep only last 50 messages
         if (history.length > 50) {
             history = history.slice(-50);
         }
-        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(history));
+        sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(history));
+    }
+
+    // Save conversation history to sessionStorage
+    function saveConversationHistory(convHistory) {
+        // Keep only last 20 exchanges
+        if (convHistory.length > 20) {
+            convHistory = convHistory.slice(-20);
+        }
+        sessionStorage.setItem(CONVERSATION_KEY, JSON.stringify(convHistory));
     }
 
     // Get current timestamp
@@ -389,10 +412,13 @@
         // Show typing indicator
         showTypingIndicator();
 
-        // Save to localStorage
+        // Save to sessionStorage
         var history = loadChatHistory();
         history.push(userMessage);
         saveChatHistory(history);
+
+        // Load conversation history from sessionStorage
+        conversationHistory = loadConversationHistory();
 
         // DEBUG: Log history yang akan dikirim
         console.log('History dikirim:', conversationHistory.slice(-10));
@@ -442,7 +468,10 @@
             conversationHistory.push({role: 'user', content: question});
             conversationHistory.push({role: 'assistant', content: data.answer});
 
-            // Save to localStorage
+            // Save both histories to sessionStorage
+            saveConversationHistory(conversationHistory);
+
+            // Save to sessionStorage
             history = loadChatHistory();
             history.push(botMessage);
             saveChatHistory(history);
@@ -563,8 +592,9 @@
     function clearChat() {
         if (!confirm('Apakah Anda yakin ingin menghapus semua chat?')) return;
 
-        // Clear localStorage
-        localStorage.removeItem(CHAT_STORAGE_KEY);
+        // Clear sessionStorage
+        sessionStorage.removeItem(CHAT_STORAGE_KEY);
+        sessionStorage.removeItem(CONVERSATION_KEY);
 
         // Clear conversation history
         conversationHistory = [];
@@ -592,6 +622,9 @@
     // Load chat history on page load
     document.addEventListener('DOMContentLoaded', function() {
         var history = loadChatHistory();
+
+        // Load conversation history from sessionStorage
+        conversationHistory = loadConversationHistory();
 
         if (history.length > 0) {
             var messagesContainer = document.getElementById('chatMessages');

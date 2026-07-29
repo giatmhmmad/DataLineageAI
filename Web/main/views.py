@@ -1,5 +1,3 @@
-from urllib import request
-
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
@@ -11,22 +9,19 @@ from django.db import connection, transaction
 from django.db.models import Q
 from django.views.decorators.http import require_GET
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
 from zoneinfo import ZoneInfo
 import json
 import csv
 import io
 import logging
-import os
 import requests
-import io
 import openpyxl
 from .models import SchemaCategoryMapping, Table, Relationship, JobDetail, TableDetail, JobDeveloper
 from .bot_eda import JobUploadLogs, JobUploadSessions, StagingDetectedTables
 from .forms import DeveloperForm
 from collections import defaultdict
 from .utils import update_job_status, get_or_create_table_ids 
-from django.db.models import OuterRef, Subquery, F, Q, Max, Count
+from django.db.models import OuterRef, Subquery, Max, Count
 
 
 
@@ -1640,256 +1635,6 @@ def upload_logs(request):
     # Normal full page render
     return render(request, 'upload_logs.html', context)
 
-# def upload_logs(request):
-#     # --- HANDLE POST REQUEST (UPDATE CATEGORIES) ---
-#     if request.method == 'POST':
-#         updated_count = 0
-#         job_name = request.POST.get('job_name', '')
-#         active_tab = request.POST.get('active_tab', 'done-panel')
-        
-#         try:
-#             # Get session object
-#             session = JobUploadSessions.objects.using('bot_eda').get(job_name=job_name)
-            
-#             # Loop semua item yang dikirim form
-#             for key, value in request.POST.items():
-#                 # Cek apakah input ini adalah input kategori (prefix 'category_')
-#                 if key.startswith('category_') and value:
-#                     # Ambil ID table dari nama input (contoh: category_55 -> id=55)
-#                     table_id = key.split('_')[1]
-#                     new_category = value
-                    
-#                     # Update data
-#                     StagingDetectedTables.objects.using('bot_eda').filter(
-#                         table_id=table_id
-#                     ).update(table_category=new_category)
-#                     updated_count += 1
-            
-#             if updated_count > 0:
-#                 # Update job status to Done
-#                 session.current_status = 'Done'
-#                 session.save(using='bot_eda', update_fields=['current_status'])
-                
-#                 # Create log entry
-#                 JobUploadLogs.objects.using('bot_eda').create(
-#                     job=session,
-#                     status='Done',
-#                     log_message=f'Categories updated successfully for {updated_count} tables. Job completed.',
-#                     update_time=timezone.now()
-#                 )
-                
-#                 messages.success(request, f"Successfully updated {updated_count} tables for job: {job_name}")
-#             else:
-#                 messages.warning(request, "No changes were made.")
-                
-#         except JobUploadSessions.DoesNotExist:
-#             messages.error(request, f"Job not found: {job_name}")
-#         except Exception as e:
-#             messages.error(request, f"Error updating tables: {e}")
-        
-#         return redirect(f"{request.path}?tab={active_tab}")
-
-#     # --- HANDLE GET REQUEST ---
-#     search_query = request.GET.get('q', '').strip()
-#     active_tab = request.GET.get('tab', 'done-panel')
-
-#     # 🔥 last update time per job (MAX dari logs)
-#     last_update_time = JobUploadLogs.objects.using('bot_eda') \
-#         .filter(job_id=OuterRef('job_id')) \
-#         .values('job_id') \
-#         .annotate(max_time=Max('update_time')) \
-#         .values('max_time')[:1]
-
-#     # 🔥 last error message (optional)
-#     last_error = JobUploadLogs.objects.using('bot_eda') \
-#         .filter(job_id=OuterRef('job_id'), status='Upload Failed') \
-#         .order_by('-update_time') \
-#         .values('log_message')[:1]
-
-#     latest_log_message = JobUploadLogs.objects.using('bot_eda') \
-#     .filter(job_id=OuterRef('job_id')) \
-#     .order_by('-update_time') \
-#     .values('log_message')[:1]
-    
-
-#     sessions = JobUploadSessions.objects.using('bot_eda') \
-#         .annotate(
-#             last_update_time=Subquery(last_update_time),
-#             last_error=Subquery(last_error),
-#             latest_log_message=Subquery(latest_log_message),
-#         ) \
-#         .prefetch_related('stagingdetectedtables_set') \
-#         .order_by('-last_update_time', '-upload_time')
-    
-
-#     if search_query:
-#         sessions = sessions.filter(
-#             Q(job_name__icontains=search_query) |
-#             Q(pic_job__icontains=search_query)
-#         )
-
-#     # 🔥 Refresh current_status untuk semua sessions dari log terbaru
-#     for session in sessions:
-#         session.refresh_current_status()
-
-#     context = {
-#         'sessions': sessions,
-#         'search_query': search_query,
-#         'active_tab': active_tab,
-#     }
-#     return render(request, 'upload_logs.html', context)
-
-
-# def upload_logs(request):
-#     # --- 1. HANDLE POST REQUEST (BULK UPDATE) ---
-#     if request.method == 'POST':
-#         # Kita meloop semua item yang dikirim form
-#         # Form akan mengirim data dengan name pattern: "category_<table_id>"
-#         updated_count = 0
-#         job_name = request.POST.get('job_name', '')
-#         active_tab = request.POST.get('active_tab', 'done-panel')
-        
-#         try:
-#             for key, value in request.POST.items():
-#                 # Cek apakah input ini adalah input kategori (prefix 'category_')
-#                 if key.startswith('category_') and value:
-#                     # Ambil ID table dari nama input (contoh: category_55 -> id=55)
-#                     table_id = key.split('_')[1]
-#                     new_category = value
-                    
-#                     # Update data
-#                     StagingDetectedTables.objects.using('bot_eda').filter(table_id=table_id).update(table_category=new_category)
-#                     updated_count += 1
-            
-#             if updated_count > 0:
-#                 messages.success(request, f"Successfully updated {updated_count} tables.")
-#             else:
-#                 messages.warning(request, "No changes were made.")
-                
-#         except Exception as e:
-#             messages.error(request, f"Error updating tables: {e}")
-        
-#         return redirect(f"{request.path}?tab={active_tab}")
-
-#     # --- 2. HANDLE GET REQUEST ---
-
-#     search_query = request.GET.get('q', '').strip()
-#     active_tab = request.GET.get('tab', 'done-panel')
-#     logs = JobUploadLogs.objects.using('bot_eda')\
-#         .select_related('job')\
-#         .prefetch_related('job__stagingdetectedtables_set')\
-#         .order_by('-update_time')
-
-#     if search_query:
-#         logs = logs.filter(
-#             Q(job__job_name__icontains=search_query) |
-#             Q(log_message__icontains=search_query)
-#         )
-
-
-#     context = {
-#         'logs': logs, 
-#         'search_query': search_query,
-#         'active_tab': active_tab,
-#     }
-#     return render(request, 'upload_logs.html', context)
-
-# def upload_logs(request):
-#     # --- 1. HANDLE POST REQUEST (BULK UPDATE CATEGORY) ---
-#     if request.method == 'POST':
-#         updated_count = 0
-#         job_name = request.POST.get('job_name', '')
-#         active_tab = request.POST.get('active_tab', 'done-panel')
-        
-#         try:
-#             # ✅ Get session object
-#             session = JobUploadSessions.objects.using('bot_eda').get(job_name=job_name)
-            
-#             # Loop semua item yang dikirim form
-#             for key, value in request.POST.items():
-#                 # Cek apakah input ini adalah input kategori (prefix 'category_')
-#                 if key.startswith('category_') and value:
-#                     # Ambil ID table dari nama input (contoh: category_55 -> id=55)
-#                     table_id = key.split('_')[1]
-#                     new_category = value
-                    
-#                     # Update data
-#                     StagingDetectedTables.objects.using('bot_eda').filter(
-#                         table_id=table_id
-#                     ).update(table_category=new_category)
-#                     updated_count += 1
-            
-#             if updated_count > 0:
-#                 # ✅ Update job status to Done using helper function
-#                 from .utils import update_job_status
-#                 session_updated = JobUploadSessions.objects.using('bot_eda').get(job_name=job_name)
-                
-#                 # Update status
-#                 session_updated.current_status = 'Done'
-#                 session_updated.save(using='bot_eda', update_fields=['current_status'])
-                
-#                 # Create log entry
-#                 JobUploadLogs.objects.using('bot_eda').create(
-#                     job=session_updated,
-#                     status='Done',
-#                     log_message=f'Categories updated successfully for {updated_count} tables. Job completed.',
-#                     update_time=timezone.now()
-#                 )
-                
-#                 messages.success(request, f"Successfully updated {updated_count} tables for job: {job_name}")
-#             else:
-#                 messages.warning(request, "No changes were made.")
-                
-#         except JobUploadSessions.DoesNotExist:
-#             messages.error(request, f"Job not found: {job_name}")
-#         except Exception as e:
-#             messages.error(request, f"Error updating tables: {e}")
-        
-#         return redirect(f"{request.path}?tab={active_tab}")
-
-#     # --- 2. HANDLE GET REQUEST (DISPLAY LOGS) ---
-#     search_query = request.GET.get('q', '').strip()
-#     active_tab = request.GET.get('tab', 'done-panel')
-    
-#     # ✅ Query sessions dengan current_status filter
-#     sessions = JobUploadSessions.objects.using('bot_eda')\
-#         .select_related()\
-#         .prefetch_related('stagingdetectedtables_set')\
-#         .order_by('-upload_time')
-    
-#     # Search filter
-#     if search_query:
-#         sessions = sessions.filter(job_name__icontains=search_query)
-    
-#     # ✅ Filter by current_status based on active tab
-#     status_mapping = {
-#         'done-panel': 'Done',
-#         'on-progress-panel': 'On Progress',
-#         'need-confirmation-panel': 'Need Confirmation',
-#         'upload-failed-panel': 'Upload Failed'
-#     }
-    
-#     if active_tab in status_mapping:
-#         sessions = sessions.filter(current_status=status_mapping[active_tab])
-    
-#     # ✅ Build sessions_data with latest log for each session
-#     sessions_data = []
-#     for session in sessions:
-#         latest_log = JobUploadLogs.objects.using('bot_eda').filter(
-#             job=session
-#         ).order_by('-update_time').first()
-        
-#         sessions_data.append({
-#             'session': session,
-#             'latest_log': latest_log
-#         })
-
-#     context = {
-#         'sessions_data': sessions_data,  # ✅ Changed from 'logs'
-#         'search_query': search_query,
-#         'active_tab': active_tab,
-#     }
-#     return render(request, 'upload_logs.html', context)
 
 def trigger_n8n_webhook(request):
     # 1. Tentukan URL Webhook n8n (dari n8n Editor -> Webhook Node)
@@ -1906,11 +1651,11 @@ def trigger_n8n_webhook(request):
     try:
         # 3. Kirim POST request
         response = requests.post(
-            n8n_webhook_url, 
+            n8n_webhook_url,
             json=payload,
             headers={'Content-Type': 'application/json'} # Optional: Tambah auth header jika perlu
         )
-        
+
         # Cek status code dari n8n
         if response.status_code == 200:
             return JsonResponse({"status": "success", "n8n_response": response.json()})
@@ -1919,7 +1664,6 @@ def trigger_n8n_webhook(request):
 
     except requests.exceptions.RequestException as e:
         return JsonResponse({"status": "failed", "error": str(e)})
-
 
 
 # ------------------------- Developer -----------------------------------------------------

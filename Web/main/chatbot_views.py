@@ -497,7 +497,6 @@ JobUploadLogs (bot_eda): log detail setiap proses upload
         intent = 'general'
 
     # DEBUG LOGGING
-    print(f"DEBUG intent: {intent} | job: {mentioned_job} | q: {question}")
 
     # ============================================================
     # STEP 5: BANGUN CONTEXT SPESIFIK PER INTENT
@@ -1425,7 +1424,7 @@ Seperti rekan kerja senior yang menjelaskan sesuatu kepada timnya.
 GAYA BAHASA:
 - Langsung ke inti jawaban, tidak bertele-tele
 - Boleh memberi interpretasi singkat dari data yang ada
-- Jangan mulai dengan "Berdasarkan data yang diberikan..."
+- Jangan mulai dengan "Berdasarkan data yang diberikan..."zz
 - Kalau data tidak ada, katakan: "Data ini belum tersedia di sistem."
 - Untuk pertanyaan umum ETL/data engineering, jawab bebas dan edukatif
 
@@ -1436,7 +1435,7 @@ FORMAT OUTPUT (WAJIB HTML, BUKAN MARKDOWN):
 - Semua tabel dibungkus <div style="overflow-x:auto">...</div>
 - Judul section gunakan <strong> atau <h6>
 - JANGAN pakai **, *, ##, atau | --- | (markdown)
-
+z
 FORMAT JOB DETAIL (WAJIB):
 Saat menampilkan informasi satu job, gunakan format HTML ini:
 <h6><code>NAMA_JOB</code></h6>
@@ -1444,7 +1443,7 @@ Saat menampilkan informasi satu job, gunakan format HTML ini:
   <thead><tr><th>Field</th><th>Keterangan</th></tr></thead>
   <tr><td>Developer</td><td>...</td></tr>
   <tr><td>Total Source Table</td><td>...</td></tr>
-  <tr><td>Total Target Table</td><td>...</td></tr>
+  <tr><td>Total Target Table</td><td>...</td></tr>.
   <tr><td>Total Relasi</td><td>...</td></tr>
   <tr><td>Status Upload</td><td>...</td></tr>
 </table>

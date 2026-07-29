@@ -19,6 +19,7 @@ class DeveloperForm(forms.ModelForm):
                 'class': 'form-control'
             }),
         }
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.fields['department'].empty_label = 'Select Department'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['department'].empty_label = 'Select Department'

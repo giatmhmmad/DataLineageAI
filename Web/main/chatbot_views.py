@@ -1,7 +1,6 @@
 """
 Chatbot Views - Django Views for AI Chatbot
 """
-GROQ_MODEL = "openai/gpt-oss-120b"
 
 import json
 
@@ -11,6 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -640,7 +640,7 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan terpisah.
 
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": impact_intro_context}
@@ -781,7 +781,7 @@ JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": narasi_context}
@@ -884,7 +884,11 @@ JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
                 client = get_groq_client()
                 llm_response = client.chat.completions.create(
+<<<<<<< HEAD
+                    model=settings.GROQ_MODEL,
+=======
                     model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
                     messages=[
                         {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                         {"role": "user", "content": narasi_context}
@@ -971,7 +975,11 @@ Tugas: Buat hanya 2-3 kalimat ringkasan tentang job ini secara keseluruhan.
 
         client = Groq(api_key=settings.GROQ_API_KEY)
         llm_response = client.chat.completions.create(
+<<<<<<< HEAD
+            model=settings.GROQ_MODEL,
+=======
             model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
             messages=[
                 {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                 {"role": "user", "content": intro_context}
@@ -1011,7 +1019,7 @@ Tugas: Buat hanya 1-2 kalimat pembuka tentang source table job ini.
 
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": intro_context}
@@ -1053,7 +1061,7 @@ Tugas: Buat hanya 1-2 kalimat pembuka tentang target table job ini.
 
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": intro_context}
@@ -1098,7 +1106,7 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan.
 
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": dev_context}
@@ -1137,7 +1145,7 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan.
 
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": dev_context}
@@ -1219,7 +1227,11 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan.
 
         client = Groq(api_key=settings.GROQ_API_KEY)
         llm_response = client.chat.completions.create(
+<<<<<<< HEAD
+            model=settings.GROQ_MODEL,
+=======
             model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
             messages=[
                 {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                 {"role": "user", "content": status_context}
@@ -1268,7 +1280,11 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan.
 
         client = Groq(api_key=settings.GROQ_API_KEY)
         llm_response = client.chat.completions.create(
+<<<<<<< HEAD
+            model=settings.GROQ_MODEL,
+=======
             model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
             messages=[
                 {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                 {"role": "user", "content": rel_context}
@@ -1318,7 +1334,7 @@ JANGAN buat tabel. Tabel sudah disiapkan terpisah.
 """
             client = get_groq_client()
             llm_response = client.chat.completions.create(
-                model=GROQ_MODEL,
+                model=settings.GROQ_MODEL,
                 messages=[
                     {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                     {"role": "user", "content": intro_context}
@@ -1368,7 +1384,11 @@ JANGAN buat tabel HTML. Tabel sudah disiapkan.
 """
         client = Groq(api_key=settings.GROQ_API_KEY)
         llm_response = client.chat.completions.create(
+<<<<<<< HEAD
+            model=settings.GROQ_MODEL,
+=======
             model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
             messages=[
                 {"role": "system", "content": "Kamu adalah AI Assistant untuk Data Lineage EDA. Gunakan Bahasa Indonesia profesional."},
                 {"role": "user", "content": job_list_context}
@@ -1416,7 +1436,11 @@ Jangan minta user menyebutkan nama job lagi.
     try:
         client = Groq(api_key=settings.GROQ_API_KEY)
         response = client.chat.completions.create(
+<<<<<<< HEAD
+            model=settings.GROQ_MODEL,
+=======
             model=GROQ_MODEL,
+>>>>>>> a5b15e555a25e34ca90dd78a37017708b50a79c0
             messages=[
                 {
                     "role": "system",

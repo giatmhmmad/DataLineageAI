@@ -179,7 +179,6 @@ SECURE_REFERRER_POLICY = None
 
 # Groq API Configuration
 
-
 # Logging configuration
 LOGGING = {
     'version': 1,
@@ -259,10 +258,6 @@ if os.environ.get('BOT_EDA_DATABASE_URL'):
     )
     bot_db_config['OPTIONS'] = {'sslmode': 'require'}
     DATABASES['bot_eda'] = bot_db_config
-
-# Groq API Key
-if os.environ.get('GROQ_API_KEY'):
-    GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 
 # Groq Configuration - ubah di sini jika ingin ganti model
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')

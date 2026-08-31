@@ -331,7 +331,9 @@
     // sessionStorage keys for chat history
     var CHAT_STORAGE_KEY = 'chatbot_history';
     var CONVERSATION_KEY = 'chatbot_conversation';
+    var ACTIVE_CONTEXT_KEY = 'chatbot_active_context';
     var conversationHistory = [];  // Untuk context di backend
+    var activeContext = null;  // Active context (job/table/list terakhir) dari backend - Fase: Active Context & Session Memory
 
     // ============================================================
     // CHAT PERSISTENCE - sessionStorage (innerHTML approach)
@@ -464,6 +466,28 @@
         sessionStorage.setItem(CONVERSATION_KEY, JSON.stringify(convHistory));
     }
 
+    // Load active_context (job/table/list terakhir) dari sessionStorage
+    function loadActiveContext() {
+        var stored = sessionStorage.getItem(ACTIVE_CONTEXT_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    // Save active_context ke sessionStorage
+    function saveActiveContext(ctx) {
+        if (ctx) {
+            sessionStorage.setItem(ACTIVE_CONTEXT_KEY, JSON.stringify(ctx));
+        } else {
+            sessionStorage.removeItem(ACTIVE_CONTEXT_KEY);
+        }
+    }
+
     // Get current timestamp
     function getTimestamp() {
         return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -496,11 +520,13 @@
 
         // Load conversation history from sessionStorage
         conversationHistory = loadConversationHistory();
+        activeContext = loadActiveContext();
 
         // DEBUG: Log history yang akan dikirim
         console.log('History dikirim:', conversationHistory.slice(-10));
+        console.log('Active context dikirim:', activeContext);
 
-        // Send to backend dengan conversation history
+        // Send to backend dengan conversation history + active context
         fetch('/chatbot/ask/', {
             method: 'POST',
             headers: {
@@ -509,7 +535,8 @@
             },
             body: JSON.stringify({
                 question: question,
-                history: JSON.stringify(conversationHistory.slice(-6))  // 6 pesan terakhir
+                history: JSON.stringify(conversationHistory.slice(-10)),  // 10 pesan terakhir
+                active_context: activeContext  // Fase: Active Context & Session Memory
             })
         })
         .then(response => response.json())
@@ -548,6 +575,15 @@
 
             // Save both histories to sessionStorage
             saveConversationHistory(conversationHistory);
+
+            // Simpan active_context yang dikembalikan backend (Fase: Active Context & Session Memory)
+            // Hanya update kalau backend mengirim nilai baru; kalau tidak ada
+            // (null), pertahankan context lama supaya follow-up berantai tetap
+            // punya konteks selama backend tidak secara eksplisit menghapusnya.
+            if (data.active_context) {
+                activeContext = data.active_context;
+                saveActiveContext(activeContext);
+            }
 
             // Save to sessionStorage
             history = loadChatHistory();
@@ -675,9 +711,11 @@
         clearChatState();
         sessionStorage.removeItem(CHAT_STORAGE_KEY);
         sessionStorage.removeItem(CONVERSATION_KEY);
+        sessionStorage.removeItem(ACTIVE_CONTEXT_KEY);
 
-        // Clear conversation history
+        // Clear conversation history & active context
         conversationHistory = [];
+        activeContext = null;
 
         // Clear UI
         var messagesContainer = document.getElementById('chatMessages');

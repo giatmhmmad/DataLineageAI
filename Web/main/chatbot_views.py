@@ -1,8 +1,8 @@
 """
 Chatbot Views - Django Views for AI Chatbot
 """
-from django.conf import settings
 import json
+
 import logging
 import re
 import traceback
@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

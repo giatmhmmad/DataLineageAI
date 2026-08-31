@@ -177,8 +177,8 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 SECURE_REFERRER_POLICY = None
 
-# Groq API Configuration
-GROQ_API_KEY = ""
+# Groq Configuration
+GROQ_MODEL = os.environ.get('GROQ_MODEL', 'openai/gpt-oss-120b')
 
 # Logging configuration
 LOGGING = {
@@ -260,9 +260,11 @@ if os.environ.get('BOT_EDA_DATABASE_URL'):
     bot_db_config['OPTIONS'] = {'sslmode': 'require'}
     DATABASES['bot_eda'] = bot_db_config
 
-# Groq API Key
+# Groq API Key and Model
 if os.environ.get('GROQ_API_KEY'):
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+if os.environ.get('GROQ_MODEL'):
+    GROQ_MODEL = os.environ.get('GROQ_MODEL')
 
 # Whitenoise untuk static files
 MIDDLEWARE_LIST = list(MIDDLEWARE)

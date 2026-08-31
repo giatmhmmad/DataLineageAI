@@ -108,7 +108,14 @@ class JobDetail(models.Model):
 
 class Relationship(models.Model):
     relationship_id = models.AutoField(primary_key=True)
-    job_name = models.CharField(max_length=255)
+    # db_index=True: Fase performa (Task 4.1) - job_name adalah kolom yang
+    # paling sering dipakai untuk WHERE (compute_direct_job_impact, semua
+    # intent per-job, filter tabel di list_data) tapi sebelumnya tidak
+    # terindeks sama sekali (beda dengan JobDetail.job_name/Table.table_name
+    # yang sudah unique=True). table1/table2 FK sudah otomatis terindeks
+    # Django, jadi job_name adalah satu-satunya kolom lookup-cepat yang
+    # tertinggal di model ini.
+    job_name = models.CharField(max_length=255, db_index=True)
 
     job = models.ForeignKey(
         JobDetail, 

@@ -49,3 +49,6 @@ Thumbs.db
 # Static files
 staticfiles/
 .env
+
+# Ad-hoc internal dev/testing scripts (not part of the shipped app)
+_l[0-9]*_*.py

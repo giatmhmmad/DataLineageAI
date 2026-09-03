@@ -409,6 +409,18 @@
     function clearChatState() {
         sessionStorage.removeItem('dl_chat_html');
         sessionStorage.removeItem('dl_conv_history');
+        // Fase: fix Bug BB - dipanggil saat isPageRefresh() true (F5/reload).
+        // Active Context (Fase: Active Context & Session Memory) punya key
+        // sessionStorage terpisah dari mekanisme lama di atas dan sebelumnya
+        // TIDAK ikut dibersihkan saat refresh - sendMessage() baca
+        // ACTIVE_CONTEXT_KEY langsung tanpa cek refresh sama sekali, jadi
+        // job/table aktif dari sebelum refresh tetap terkirim ke backend
+        // walau UI sudah terlihat "Selamat Datang!". Dibuktikan lewat
+        // testing manual: chatbot_active_context tidak berubah setelah F5
+        // sungguhan, payload request berikutnya masih membawa context lama.
+        sessionStorage.removeItem(CHAT_STORAGE_KEY);
+        sessionStorage.removeItem(CONVERSATION_KEY);
+        sessionStorage.removeItem(ACTIVE_CONTEXT_KEY);
     }
 
     function handleKeyPress(event) {

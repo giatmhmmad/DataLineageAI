@@ -29,3 +29,8 @@ staticfiles/
 # Environment files
 .env
 *.sql
+
+# Local-only project docs (not tracked in repo history going forward)
+CLAUDE.md
+IMPLEMENTATION_PLAN.md
+PROJECT_MEMORY.md
